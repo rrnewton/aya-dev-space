@@ -1,3 +1,9 @@
 [submodule "aya"]
 	path = aya
 	url = git@github.com:rrnewton/aya.git
+[submodule "scx"]
+	path = scx
+	url = git@github.com:sched-ext/scx
+[submodule "rsched"]
+	path = rsched
+	url = git@github.com:rrnewton/rsched.git
