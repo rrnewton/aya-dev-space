@@ -1,0 +1,3 @@
+[submodule "aya"]
+	path = aya
+	url = git@github.com:rrnewton/aya.git
