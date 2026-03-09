@@ -17,8 +17,8 @@ and are committed to the parent repo.
 
 ```sh
 mb quickstart        # get oriented with the CLI
+mb ready             # see issues with no blockers (start here)
 mb list              # see all issues
-mb list --open       # see open issues only
 mb show aya-21       # show a specific issue
 mb create "title" -d "description" -l label --parent aya-21
 mb update aya-22 --status closed

@@ -1,6 +1,6 @@
 ---
 title: Remove unused Object.kfunc_btf_ids field
-status: open
+status: closed
 priority: 2
 issue_type: task
 labels:
@@ -9,7 +9,7 @@ labels:
 depends_on:
   aya-21: parent-child
 created_at: 2026-03-09T20:40:04.094329340+00:00
-updated_at: 2026-03-09T20:40:04.094329340+00:00
+updated_at: 2026-03-09T23:10:09.122037553+00:00
 ---
 
 # Description
