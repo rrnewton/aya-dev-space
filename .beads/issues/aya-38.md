@@ -7,9 +7,9 @@ labels:
 - scx
 - architecture
 created_at: 2026-03-09T20:40:35.999217122+00:00
-updated_at: 2026-03-09T20:40:35.999217122+00:00
+updated_at: 2026-03-10T15:05:15.166955666+00:00
 ---
 
 # Description
 
-Extract compat/ module into a standalone scx-ebpf crate (or aya-sched-ext) that provides: auto-generated sched_ext_ops struct from vmlinux BTF, scx_ops_define! proc macro, type-safe kfunc wrappers for scx_bpf_* functions. Multiple schedulers can share it.
+Deferred: scx_purerust is currently the only pure-Rust scheduler. Extracting a shared crate makes sense when a second pure-Rust scheduler is written — at that point, the natural refactoring point is clear. The compat/ module is well-organized with clear boundaries (kfuncs.rs, struct_ops.rs, vmlinux.rs) making future extraction straightforward.
