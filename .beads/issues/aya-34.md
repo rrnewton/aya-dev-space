@@ -1,6 +1,6 @@
 ---
 title: Replace scx_ops_define! macro with proc macro
-status: open
+status: closed
 priority: 2
 issue_type: task
 labels:
@@ -9,9 +9,9 @@ labels:
 depends_on:
   aya-33: parent-child
 created_at: 2026-03-09T20:40:21.449846274+00:00
-updated_at: 2026-03-09T20:40:21.449846274+00:00
+updated_at: 2026-03-11T21:32:06.117495538+00:00
 ---
 
 # Description
 
-The scx_ops_define! macro (278 lines) manually defines every callback trampoline. Should be replaced by a proc macro that reads the kernel struct definition from vmlinux BTF and auto-generates trampolines. Belongs in aya-ebpf or a dedicated aya-sched-ext crate.
+Implemented scx-ebpf-derive proc macro crate. The scx_ops_define! macro is now data-driven: 34 callback signatures are encoded as a const table, and the proc macro generates trampolines programmatically. Adding new callbacks requires one CallbackSig entry. Unknown callbacks produce compile-time errors.
