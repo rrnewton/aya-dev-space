@@ -10,9 +10,9 @@ labels:
 depends_on:
   aya-33: parent-child
 created_at: 2026-03-11T19:55:09.818847114+00:00
-updated_at: 2026-03-11T19:55:09.818847114+00:00
+updated_at: 2026-03-14T03:11:30.405633225+00:00
 ---
 
 # Description
 
-The LLVM BPF backend has a BPFAbstractMemberAccess pass that lowers llvm.preserve.struct.access.index intrinsics into CO-RE relocation records. Clang runs this pass but rustc does not. Enabling it for the bpfel-unknown-none target in rustc_codegen_llvm would give Rust BPF programs native CO-RE support with zero overhead. Small rustc change but requires upstream coordination. The register_tool feature (nightly) could provide the #[bpf::preserve_access_index] attribute that triggers the intrinsic emission.
+Key finding: BPFAbstractMemberAccessPass is already in libLLVM.so (it's a BPF target FunctionPass, not a clang-only pass). Rustc links the same libLLVM. The pass just isn't registered in rustc's pipeline. Two viable approaches: (1) A ~50-line LLVM plugin .so that registers the existing pass, loaded via rustc -Z llvm-plugins=libbpf_passes.so. (2) A rustc PR adding the pass to the BPF target pipeline. Both would give Rust BPF native CO-RE support with zero overhead, using the same codegen path as clang.
