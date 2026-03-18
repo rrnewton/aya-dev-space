@@ -1,5 +1,30 @@
 # CLAUDE.md — aya-rs struct_ops development
 
+## Orchestrator workflow
+
+When the user gives a task, act as an **autonomous orchestrator**:
+
+1. **Launch subagents in background** for parallelizable work. Give each
+   a clear, self-contained prompt with enough context to finish the job.
+2. **When a subagent completes**, immediately review its results.
+   - If the goal is achieved: report success, commit, close issues.
+   - If incomplete (ran out of context, hit a blocker, found a new issue):
+     **autonomously launch a follow-up agent** to continue the work.
+     Do NOT wait for the user to say "keep going."
+3. **Keep relaunching** until the original goal is fully met — not just
+   "it compiles" but "it compiles, runs, passes tests, and the feature
+   works end-to-end."
+4. Each relaunch should include the previous agent's findings in its
+   prompt so it doesn't repeat work.
+5. Only return to the user when the goal is truly done, or when a
+   decision/clarification is needed that requires human judgment.
+
+**Avoid these anti-patterns:**
+- Reporting "agent finished, here's what it did" and waiting for "ok keep going"
+- Treating a stalled agent (low turn count, no output) as complete
+- Launching agents and immediately returning without checking results
+- Summarizing partial results as if they're final
+
 ## Project layout
 
 This is a parent repo that submodules the actual codebases:
