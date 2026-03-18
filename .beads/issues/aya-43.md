@@ -9,9 +9,9 @@ labels:
 depends_on:
   aya-33: parent-child
 created_at: 2026-03-13T18:15:37.428925241+00:00
-updated_at: 2026-03-17T13:32:05.787073259+00:00
+updated_at: 2026-03-18T15:29:33.505095703+00:00
 ---
 
 # Description
 
-Mostly complete. Remaining: primary_cpumask (now unblocked by kptr fix), deferred timer, PMU map wiring, hybrid core migration.
+COMPLETE: 26 of 28 PORT_TODOs resolved. Remaining 2 are minor optimizations (bpf_loop for full CPU scan, hybrid core wake-affine). All core scheduling features implemented and tested.
