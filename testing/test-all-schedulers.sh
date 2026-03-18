@@ -17,6 +17,8 @@
 #   VNG_MEM        — override VM memory size (see run-in-vm.sh)
 #   VNG_NUMA       — "0" to disable NUMA (see run-in-vm.sh)
 #   VNG_TOPOEXT    — "0" to skip AMD topoext fix (see run-in-vm.sh)
+#   VNG_KERNEL     — path to a vmlinuz image (see run-in-vm.sh)
+#   CARGO_FEATURES — extra features for cargo build (e.g., "kernel_6_16")
 
 set -euo pipefail
 
@@ -30,6 +32,8 @@ export VNG_SMP="${VNG_SMP:-16,sockets=2,cores=4,threads=2}"
 export VNG_MEM="${VNG_MEM:-2G}"
 export VNG_NUMA="${VNG_NUMA:-1}"
 export VNG_TOPOEXT="${VNG_TOPOEXT:-1}"
+export VNG_KERNEL="${VNG_KERNEL:-}"
+CARGO_FEATURES="${CARGO_FEATURES:-}"
 
 # ---------------------------------------------------------------------------
 # Schedulers to test
@@ -55,8 +59,13 @@ build_scheduler() {
         return 1
     fi
 
-    echo "--- Building $name (release) ---"
-    if (cd "$dir" && cargo build --release 2>&1); then
+    local cargo_args=(build --release)
+    if [[ -n "$CARGO_FEATURES" ]]; then
+        cargo_args+=(--features "$CARGO_FEATURES")
+    fi
+
+    echo "--- Building $name (release${CARGO_FEATURES:+, features: $CARGO_FEATURES}) ---"
+    if (cd "$dir" && cargo "${cargo_args[@]}" 2>&1); then
         echo "--- $name built OK ---"
         return 0
     else
@@ -96,10 +105,17 @@ test_scheduler() {
 # ---------------------------------------------------------------------------
 echo "======================================================="
 echo " sched-ext Pure-Rust Scheduler Test Suite"
-echo " Kernel: $(uname -r)"
+if [[ -n "$VNG_KERNEL" ]]; then
+    echo " Kernel: $VNG_KERNEL"
+else
+    echo " Kernel: $(uname -r) (host)"
+fi
 echo " Duration per scheduler: ${DURATION}s"
 echo " VM topology: $VNG_SMP, mem=$VNG_MEM"
 echo " NUMA: $([ "$VNG_NUMA" = "1" ] && echo "2-node" || echo "off")"
+if [[ -n "$CARGO_FEATURES" ]]; then
+    echo " Cargo features: $CARGO_FEATURES"
+fi
 echo "======================================================="
 echo ""
 

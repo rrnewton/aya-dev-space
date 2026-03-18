@@ -23,6 +23,7 @@ By default the VM runs with a realistic multi-domain topology:
 | Memory | 2G | `VNG_MEM` |
 | NUMA | 2 nodes (8 CPUs each) | `VNG_NUMA` (set "0" to disable) |
 | AMD topoext | enabled (exposes SMT to guest) | `VNG_TOPOEXT` (set "0" to disable) |
+| Kernel | host kernel | `VNG_KERNEL` (path to vmlinuz image) |
 
 This exercises:
 - **NUMA awareness** — scheduler sees 2 NUMA nodes with different memory latencies
@@ -42,6 +43,39 @@ VNG_SMP=4 VNG_NUMA=0 ./testing/run-in-vm.sh <binary>
 # 32 CPUs across 4 NUMA nodes (requires matching VNG_MEM)
 VNG_SMP="32,sockets=4,cores=4,threads=2" VNG_MEM=4G ./testing/run-in-vm.sh <binary>
 ```
+
+### Testing with different kernel versions
+
+Some kfuncs are only available on newer kernels. Use `VNG_KERNEL` to
+boot a specific kernel image:
+
+```bash
+# Available kernels on this machine:
+ls /boot/vmlinuz-*
+
+# Test with 6.16 kernel (has scx_bpf_select_cpu_and)
+VNG_KERNEL=/boot/vmlinuz-6.16.0 ./testing/run-in-vm.sh <binary>
+
+# Build with kernel_6_16 feature and test on 6.16 kernel
+cd scx/scheds/rust_only/scx_cosmos
+cargo build --release --features kernel_6_16
+cd ../../../..
+VNG_KERNEL=/boot/vmlinuz-6.16.0 ./testing/run-in-vm.sh \
+    ./scx/scheds/rust_only/scx_cosmos/target/release/scx_cosmos
+
+# Or use test-all-schedulers.sh with both feature and kernel:
+CARGO_FEATURES=kernel_6_16 VNG_KERNEL=/boot/vmlinuz-6.16.0 \
+    ./testing/test-all-schedulers.sh 20
+```
+
+#### Kernel feature matrix
+
+| Feature | Min Kernel | Cargo Feature | kfunc |
+|---------|-----------|---------------|-------|
+| `select_cpu_and` | 6.16 | `kernel_6_16` | `scx_bpf_select_cpu_and()` |
+
+Without the feature flag, the scheduler falls back to `select_cpu_dfl()`
+which works on all kernels with sched-ext support.
 
 ## Scripts
 

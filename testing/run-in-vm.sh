@@ -18,6 +18,8 @@
 #   VNG_MEM     — guest memory (default: "2G")
 #   VNG_NUMA    — set to "0" to disable NUMA (default: enabled, 2 nodes)
 #   VNG_TOPOEXT — set to "0" to skip topoext workaround (default: enabled)
+#   VNG_KERNEL  — path to a vmlinuz image (default: empty = use host kernel)
+#                 Example: VNG_KERNEL=/boot/vmlinuz-6.16.0
 #   VERBOSE     — set to "1" for verbose output
 
 set -euo pipefail
@@ -61,6 +63,7 @@ VNG_SMP="${VNG_SMP:-16,sockets=2,cores=4,threads=2}"
 VNG_MEM="${VNG_MEM:-2G}"
 VNG_NUMA="${VNG_NUMA:-1}"
 VNG_TOPOEXT="${VNG_TOPOEXT:-1}"
+VNG_KERNEL="${VNG_KERNEL:-}"
 
 # Parse the total vCPU count from the SMP string for NUMA CPU split.
 # Accepts either a bare number ("16") or a topology string ("16,sockets=2,...").
@@ -103,13 +106,25 @@ WRAPEOF
 # Build virtme-run arguments
 # ---------------------------------------------------------------------------
 VIRTME_ARGS=(
-    --kimg
     --mods auto
     --user root
     --cpus "$VNG_SMP"
     --memory "$VNG_MEM"
     --disable-microvm
 )
+
+# Use a custom kernel image if specified, otherwise boot the host kernel.
+if [[ -n "$VNG_KERNEL" ]]; then
+    if [[ ! -f "$VNG_KERNEL" ]]; then
+        echo "ERROR: VNG_KERNEL=$VNG_KERNEL does not exist" >&2
+        exit 1
+    fi
+    VIRTME_ARGS+=(--kimg "$VNG_KERNEL")
+    KERNEL_DISPLAY="$VNG_KERNEL"
+else
+    VIRTME_ARGS+=(--kimg)
+    KERNEL_DISPLAY="host ($(uname -r))"
+fi
 
 # Add NUMA configuration: split CPUs evenly across 2 nodes.
 if [[ "$VNG_NUMA" == "1" ]]; then
@@ -161,6 +176,7 @@ INNEREOF
 # Run
 # ---------------------------------------------------------------------------
 echo "=== run-in-vm: $SCHED_NAME (${DURATION}s) ==="
+echo "    kernel: $KERNEL_DISPLAY"
 echo "    topology: $VNG_SMP, mem=$VNG_MEM, numa=$([ "$VNG_NUMA" = "1" ] && echo "2-node" || echo "off")"
 
 # Set up QEMU wrapper for AMD topoext if requested.
