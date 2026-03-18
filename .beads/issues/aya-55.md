@@ -1,13 +1,13 @@
 ---
 title: 'aya bug: fixup_kfunc_calls fails for BPF subprograms'
-status: open
+status: closed
 priority: 1
 issue_type: task
 labels:
 - aya
 - bug
 created_at: 2026-03-16T18:02:11.295276166+00:00
-updated_at: 2026-03-16T18:02:11.295276166+00:00
+updated_at: 2026-03-18T19:11:29.511606591+00:00
 ---
 
 # Description

@@ -1,6 +1,6 @@
 ---
 title: 'Implement cosmos PORT_TODOs: userspace globals + idle scanning + cpufreq'
-status: open
+status: closed
 priority: 1
 issue_type: task
 labels:
@@ -9,7 +9,7 @@ labels:
 depends_on:
   aya-33: parent-child
 created_at: 2026-03-13T18:15:37.428925241+00:00
-updated_at: 2026-03-18T15:29:33.505095703+00:00
+updated_at: 2026-03-18T19:11:29.513173208+00:00
 ---
 
 # Description
