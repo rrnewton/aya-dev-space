@@ -1,6 +1,6 @@
 ---
 title: 'Cosmos 100%: deferred wakeup timer'
-status: open
+status: closed
 priority: 2
 issue_type: task
 labels:
@@ -9,7 +9,7 @@ labels:
 depends_on:
   aya-43: parent-child
 created_at: 2026-03-14T14:51:26.327763474+00:00
-updated_at: 2026-03-14T14:51:26.327763474+00:00
+updated_at: 2026-03-18T19:53:03.486506940+00:00
 ---
 
 # Description
