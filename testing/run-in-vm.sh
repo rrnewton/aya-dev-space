@@ -200,8 +200,17 @@ VM_RC=$?
 # Show the captured log (strip carriage returns and script header/footer).
 grep -v '^Script ' "$TMPLOG" | tr -d '\r'
 
+# Check for failure: the VM exit code from script(1) is unreliable because
+# script doesn't always propagate the inner command's exit code (especially
+# through virtme-run -> QEMU -> guest).  So we also check the log for
+# explicit FAILED markers written by the in-VM command.
 if [[ $VM_RC -ne 0 ]]; then
     echo "=== FAIL: $SCHED_NAME (vm exit code $VM_RC) ==="
+    exit 1
+fi
+
+if grep -q "FAILED with exit code" "$TMPLOG"; then
+    echo "=== FAIL: $SCHED_NAME (scheduler failed inside VM) ==="
     exit 1
 fi
 
