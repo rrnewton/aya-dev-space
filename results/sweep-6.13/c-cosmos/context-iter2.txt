@@ -1,0 +1,12 @@
+stress-ng: info:  [3942797] setting to a 10 secs run per stressor
+stress-ng: info:  [3942797] dispatching hogs: 4 context
+stress-ng: metrc: [3942797] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s CPU used per       RSS Max
+stress-ng: metrc: [3942797]                           (secs)    (secs)    (secs)   (real time) (usr+sys time) instance (%)          (KB)
+stress-ng: metrc: [3942797] context          180109     10.00     20.31     19.19     18010.88        4559.80        98.75          1460
+stress-ng: metrc: [3942797] miscellaneous metrics:
+stress-ng: metrc: [3942797] context          4499604.93 swapcontext calls per sec (harmonic mean of 4 instances)
+stress-ng: info:  [3942797] skipped: 0
+stress-ng: info:  [3942797] passed: 4: context (4)
+stress-ng: info:  [3942797] failed: 0
+stress-ng: info:  [3942797] metrics untrustworthy: 0
+stress-ng: info:  [3942797] successful run completed in 10.00 secs

@@ -1,0 +1,12 @@
+stress-ng: info:  [4098262] setting to a 10 secs run per stressor
+stress-ng: info:  [4098262] dispatching hogs: 4 pipe
+stress-ng: metrc: [4098262] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s CPU used per       RSS Max
+stress-ng: metrc: [4098262]                           (secs)    (secs)    (secs)   (real time) (usr+sys time) instance (%)          (KB)
+stress-ng: metrc: [4098262] pipe           44501239     10.00      2.83     43.70   4450003.85      956388.36       116.32          1460
+stress-ng: metrc: [4098262] miscellaneous metrics:
+stress-ng: metrc: [4098262] pipe                4344.73 MB per sec pipe write rate (harmonic mean of 4 instances)
+stress-ng: info:  [4098262] skipped: 0
+stress-ng: info:  [4098262] passed: 4: pipe (4)
+stress-ng: info:  [4098262] failed: 0
+stress-ng: info:  [4098262] metrics untrustworthy: 0
+stress-ng: info:  [4098262] successful run completed in 10.00 secs
