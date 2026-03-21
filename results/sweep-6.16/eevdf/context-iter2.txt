@@ -1,0 +1,14 @@
+stress-ng: info:  [720] setting to a 10 secs run per stressor
+stress-ng: info:  [720] dispatching hogs: 4 context
+stress-ng: info:  [720] note: /proc/sys/kernel/sched_autogroup_enabled is 1 and this can impact scheduling throughput for processes not attached to a tty. Setting this to 0 may improve performance metrics
+stress-ng: metrc: [720] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s CPU used per       RSS Max
+stress-ng: metrc: [720]                           (secs)    (secs)    (secs)   (real time) (usr+sys time) instance (%)          (KB)
+stress-ng: metrc: [720] context          133492     10.00     19.22     20.71     13349.06        3342.74        99.84          1288
+stress-ng: metrc: [720] miscellaneous metrics:
+stress-ng: metrc: [720] context          3337392.73 swapcontext calls per sec (harmonic mean of 4 instances)
+stress-ng: info:  [720] skipped: 0
+stress-ng: info:  [720] passed: 4: context (4)
+stress-ng: info:  [720] failed: 0
+stress-ng: info:  [720] metrics untrustworthy: 0
+stress-ng: info:  [720] successful run completed in 10.00 secs
+

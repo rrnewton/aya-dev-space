@@ -1,0 +1,19 @@
+12:04:00 [0m[34m[INFO] [0mNUMA nodes: 1
+12:04:00 [0m[34m[INFO] [0mDisabling NUMA optimizations
+12:04:00 [0m[34m[INFO] [0mscx_cosmos 1.0.7-g82649294-dirty x86_64-unknown-linux-gnu SMT off
+12:04:00 [0m[34m[INFO] [0mscheduler options: /home/newton/working_copies/aya-rs.dev/scx/target/release/scx_cosmos
+12:04:00 [0m[34m[INFO] [0mscheduler flags: 0x36
+stress-ng: info:  [724] setting to a 10 secs run per stressor
+stress-ng: info:  [724] dispatching hogs: 4 pipe
+stress-ng: info:  [724] note: /proc/sys/kernel/sched_autogroup_enabled is 1 and this can impact scheduling throughput for processes not attached to a tty. Setting this to 0 may improve performance metrics
+stress-ng: metrc: [724] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s CPU used per       RSS Max
+stress-ng: metrc: [724]                           (secs)    (secs)    (secs)   (real time) (usr+sys time) instance (%)          (KB)
+stress-ng: metrc: [724] pipe           14310506     10.00      1.55     72.47   1430984.13      193316.24       185.06          1276
+stress-ng: metrc: [724] miscellaneous metrics:
+stress-ng: metrc: [724] pipe                1365.60 MB per sec pipe write rate (harmonic mean of 4 instances)
+stress-ng: info:  [724] skipped: 0
+stress-ng: info:  [724] passed: 4: pipe (4)
+stress-ng: info:  [724] failed: 0
+stress-ng: info:  [724] metrics untrustworthy: 0
+stress-ng: info:  [724] successful run completed in 10.00 secs
+

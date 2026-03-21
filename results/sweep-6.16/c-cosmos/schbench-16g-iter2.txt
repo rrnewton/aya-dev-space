@@ -1,0 +1,44 @@
+11:48:11 [0m[34m[INFO] [0mNUMA nodes: 1
+11:48:11 [0m[34m[INFO] [0mDisabling NUMA optimizations
+11:48:11 [0m[34m[INFO] [0mscx_cosmos 1.0.7-g82649294-dirty x86_64-unknown-linux-gnu SMT off
+11:48:11 [0m[34m[INFO] [0mscheduler options: /home/newton/working_copies/aya-rs.dev/scx/target/release/scx_cosmos
+11:48:11 [0m[34m[INFO] [0mscheduler flags: 0x36
+Wakeup Latencies percentiles (usec) runtime 10 (s) (28741 total samples)
+	  50.0th: 11         (11313 samples)
+	  90.0th: 14         (8204 samples)
+	* 99.0th: 20         (1834 samples)
+	  99.9th: 37         (217 samples)
+	  min=1, max=80
+Request Latencies percentiles (usec) runtime 10 (s) (28727 total samples)
+	  50.0th: 5480       (8037 samples)
+	  90.0th: 5608       (10649 samples)
+	* 99.0th: 6808       (2505 samples)
+	  99.9th: 8496       (262 samples)
+	  min=5389, max=11434
+RPS percentiles (requests) runtime 10 (s) (11 total samples)
+	  20.0th: 2860       (3 samples)
+	* 50.0th: 2884       (4 samples)
+	  90.0th: 2892       (4 samples)
+	  min=2785, max=2895
+sched delay: message 0 (usec) worker 0 (usec)
+current rps: 2882.79
+Wakeup Latencies percentiles (usec) runtime 10 (s) (28753 total samples)
+	  50.0th: 11         (11319 samples)
+	  90.0th: 14         (8207 samples)
+	* 99.0th: 20         (1835 samples)
+	  99.9th: 37         (217 samples)
+	  min=1, max=80
+Request Latencies percentiles (usec) runtime 10 (s) (28753 total samples)
+	  50.0th: 5480       (8047 samples)
+	  90.0th: 5608       (10658 samples)
+	* 99.0th: 6808       (2505 samples)
+	  99.9th: 8496       (262 samples)
+	  min=5389, max=11434
+RPS percentiles (requests) runtime 10 (s) (11 total samples)
+	  20.0th: 2860       (3 samples)
+	* 50.0th: 2884       (4 samples)
+	  90.0th: 2892       (4 samples)
+	  min=2785, max=2895
+average rps: 2875.30
+sched delay: message 0 (usec) worker 0 (usec)
+
