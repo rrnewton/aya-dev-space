@@ -8,21 +8,18 @@ labels:
 depends_on:
   aya-33: parent-child
 created_at: 2026-03-18T19:51:05.090701508+00:00
-updated_at: 2026-03-18T19:51:05.090701508+00:00
+updated_at: 2026-03-22T00:36:43.261632019+00:00
 ---
 
 # Description
 
-When running cosmos on kernel 6.16.0, the BPF verifier rejects the enable callback (and likely enqueue/stopping too) because write_field_u64() uses write_volatile via raw pointer arithmetic to write to task_struct.scx.dsq_vtime. The 6.16 verifier treats the callback arg as trusted_ptr_task_struct() and rejects arbitrary u64 stores at computed offsets.
+Cosmos on kernels with shifted sched_ext_entity layout.
 
-Error: 'func enable arg0 has btf_id 115 type STRUCT task_struct / R1_w=trusted_ptr_task_struct() / (7b) *(u64 *)(r1 +912) = r2'
+CO-RE infrastructure works (markers, postprocessor, BTF.ext records).
+Kfunc setters work on 6.18 (task_set_dsq_vtime/task_set_slice).
 
-This does NOT affect kernel 6.13 (host kernel), which passes fine. The issue is that without CO-RE field access (BTF-guided member access), the Rust eBPF code does plain pointer arithmetic, which newer verifier versions reject for trusted_ptr args.
+Two remaining blockers on 6.18:
+1. Verifier complexity: enqueue exceeds 1M insns due to inlined pick_idle_cpu_preferred loop. Need to make it a subprogram.
+2. CO-RE type mismatch: postprocessor uses __u64 placeholder for all fields, but flags is u32. Need actual vmlinux field types.
 
-Possible fixes:
-1. Use bpf_probe_write_user() or similar helper (unlikely to work for kernel structs)
-2. Wait for CO-RE support in Rust BPF (aya-42)
-3. Use BPF_CORE_READ_WRITE macros equivalent (doesn't exist in Rust yet)
-4. Investigate if the 6.16 verifier has a way to allowlist these writes for struct_ops
-
-Note: cosmos built WITHOUT kernel_6_16 feature also fails on 6.16 — the issue is not related to select_cpu_and but to the fundamental write_volatile approach.
+core_write! is rejected on 6.18 — kfuncs mandatory (kernel_6_16 feature required).

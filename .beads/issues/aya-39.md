@@ -1,13 +1,13 @@
 ---
 title: 'Decide: should kfunc support be general or struct_ops-specific?'
-status: open
+status: closed
 priority: 2
 issue_type: task
 labels:
 - aya
 - architecture
 created_at: 2026-03-09T20:40:36.001094909+00:00
-updated_at: 2026-03-10T15:05:15.168753621+00:00
+updated_at: 2026-03-21T23:59:18.808909673+00:00
 ---
 
 # Description

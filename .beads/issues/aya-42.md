@@ -1,6 +1,6 @@
 ---
 title: CO-RE post-processor prototype complete
-status: open
+status: closed
 priority: 3
 issue_type: task
 labels:
@@ -9,7 +9,7 @@ labels:
 depends_on:
   aya-33: parent-child
 created_at: 2026-03-12T01:00:38.244534367+00:00
-updated_at: 2026-03-12T01:00:38.244534367+00:00
+updated_at: 2026-03-21T23:59:18.806762178+00:00
 ---
 
 # Description
