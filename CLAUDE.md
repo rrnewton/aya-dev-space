@@ -51,10 +51,37 @@ mb update aya-22 --status closed
 
 Key parent issues:
 - **aya-21**: aya struct_ops PR readiness cleanup (children: aya-22..aya-32)
-- **aya-33**: eBPF-side struct_ops hackiness / compiler limitations (children: aya-34..aya-37)
+- **aya-33**: eBPF-side struct_ops hackiness / compiler limitations (P3 improvement)
 - **aya-38**: Reusable SCX library crate
-- **aya-39**: General vs struct_ops-specific kfunc support
-- **aya-40**: PR splitting strategy
+- **aya-56**: Cosmos on kernel 6.16+ (CO-RE + kfunc setters)
+- **aya-57**: Cosmos port accuracy audit
+- **aya-58**: Fix cosmos port bugs found in audit (children: aya-59..aya-73)
+
+## PORT_TODO discipline
+
+The cosmos port aims for **100% feature parity** with the C original.
+No silent compromises, workarounds, or simplified alternatives.
+
+### Rules:
+1. **Every gap gets a PORT_TODO comment** in the source code with a
+   brief explanation of what's missing and why.
+2. **Every PORT_TODO gets a beads issue** (`mb create`) under the
+   appropriate parent issue, with label `port-gap`.
+3. **Never say "we skip X"** without filing an issue. If we can't do
+   something due to a toolchain limitation, that's a tracked blocker,
+   not an acceptable simplification.
+4. **Comments must say what IS missing**, not imply it's fine. Example:
+   - BAD: `// We skip the is_smt_contended check since we don't have
+     LLC IDs in pure Rust BPF.`
+   - GOOD: `// PORT_TODO(aya-XX): is_smt_contended check missing.
+     Requires per-CPU LLC IDs which need CO-RE field access to
+     cpu_llc_id. Tracked as a port gap.`
+5. **Close PORT_TODOs** by implementing the feature, not by rationalizing
+   why it's unnecessary.
+
+### Mapping document:
+See `docs/cosmos-port-mapping.md` for the complete C→Rust function
+mapping, including all gaps and their tracking issues.
 
 ## Committing
 
@@ -73,10 +100,19 @@ cd aya && cargo build          # whole workspace
 cargo clippy --lib -p aya -p aya-obj   # lint just the libs
 ```
 
-### scx_purerust (the scheduler)
+### scx_cosmos (the production scheduler)
 ```sh
-cd scx/scheds/rust/scx_purerust
+cd scx/scheds/rust_only/scx_cosmos
 cargo build --release          # builds eBPF + userspace
+# For kernel 6.16+:
+SCX_VMLINUX_BTF=/lib/modules/6.16.0/build/vmlinux \
+  cargo build --release --features kernel_6_16
+```
+
+### scx_simple (the FIFO scheduler)
+```sh
+cd scx/scheds/rust_only/scx_simple
+cargo build --release
 ```
 
 The eBPF build requires nightly Rust and builds `scx_purerust-ebpf`
@@ -85,7 +121,8 @@ source for the `bpfel-unknown-none` target.
 
 ### Running
 ```sh
-sudo ./target/release/scx_purerust   # attach scheduler
+sudo ./target/release/scx_cosmos   # attach cosmos scheduler
+sudo ./target/release/scx_simple   # attach simple FIFO scheduler
 # Ctrl-C to detach
 ```
 
