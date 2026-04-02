@@ -1,5 +1,25 @@
 # CLAUDE.md — aya-rs struct_ops development
 
+## A note for ORC specifically
+
+If you are an agent with the orc orchestrator, read this section, otherwise skip it.
+
+Note that this is a Github/OSS workflow. We use git, and the `gh`
+(github CLI), NOT internal Meta tasks and mercurial/sapling.
+
+Moreover this project uses a version controlled task graph using
+minibeaads (`mb`) as described below.  You will fork your parallel
+suborc agents in the separate git worktrees and they will use your
+internal `tg` tool for managing task graphs.  There is no tg<>mb sync
+directly.  Instead, you will use `tg` for agent orchestration, but
+when you COMMIT to git, you will summarize a high level status of
+what's worked on and what's left inside durable beads issues that are
+committed to the repository.
+
+Make sure that the next person/agent that picks up the repository will
+be able to understand the status just from the beads issues, without
+reference to tg graphs that only exist on THIS machine.
+
 ## Orchestrator workflow
 
 When the user gives a task, act as an **autonomous orchestrator**:
@@ -34,6 +54,9 @@ This is a parent repo that submodules the actual codebases:
   - `scx/` — sched-ext/scx repo (submodule), branch `aya-next`
   - `.beads/` — minibeads issue tracker (committed to parent repo)
   - `CLAUDE.md` — this file (committed to parent repo)
+
+NOTE that we create additional git worktrees as needed, e.g. aya2, aya3, scx2, scx3 ... to enable
+(sub)agents to work in parallel on features without interfering in the same working copies.
 
 ## Issue tracking
 
