@@ -28,13 +28,28 @@ install-deps: ## Install build dependencies (Rust nightly, bpf-linker, clang)
 	@echo ""
 	@echo "=== Dependencies installed ==="
 
-build: ## Build the pure-Rust cosmos scheduler
-	cd $(COSMOS_DIR) && cargo build --release
+# Auto-detect kernel version for feature flags
+KERN_VER := $(shell uname -r | cut -d. -f1-2)
+KERN_MAJOR := $(shell echo $(KERN_VER) | cut -d. -f1)
+KERN_MINOR := $(shell echo $(KERN_VER) | cut -d. -f2)
+IS_6_16_PLUS := $(shell [ "$(KERN_MAJOR)" -gt 6 ] 2>/dev/null && echo 1 || ([ "$(KERN_MAJOR)" -eq 6 ] && [ "$(KERN_MINOR)" -ge 16 ] 2>/dev/null && echo 1 || echo 0))
+
+# Resolve vmlinux BTF: prefer /lib/modules/.../build/vmlinux, fall back to /sys/kernel/btf/vmlinux
+VMLINUX_BTF := $(shell \
+	p="/lib/modules/$$(uname -r)/build/vmlinux"; \
+	if [ -f "$$p" ]; then echo "$$p"; \
+	elif [ -f /sys/kernel/btf/vmlinux ]; then echo /sys/kernel/btf/vmlinux; \
+	fi)
+
+FEATURES := $(if $(filter 1,$(IS_6_16_PLUS)),--features kernel_6_16,)
+
+build: ## Build the pure-Rust cosmos scheduler (auto-detects kernel 6.16+)
+	cd $(COSMOS_DIR) && SCX_VMLINUX_BTF=$(VMLINUX_BTF) cargo build --release $(FEATURES)
 	@echo ""
 	@echo "Binary: $(BINARY)"
 
 build-6.16: ## Build for kernel 6.16+ (enables select_cpu_and kfunc)
-	cd $(COSMOS_DIR) && SCX_VMLINUX_BTF=/lib/modules/$$(ls /lib/modules/ | grep '^6\.1[6-9]\|^6\.[2-9]\|^7\.' | head -1)/build/vmlinux \
+	cd $(COSMOS_DIR) && SCX_VMLINUX_BTF=$(VMLINUX_BTF) \
 		cargo build --release --features kernel_6_16
 
 test: build ## Build and run cosmos on this host (30s, requires sudo)
