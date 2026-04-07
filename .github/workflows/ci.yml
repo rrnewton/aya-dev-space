@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kernel: stable/6_12
+            kernel_display: "6.12"
+            cosmos_features: ""
+          - kernel: sched_ext/for-next
+            kernel_display: "6.18 (for-next)"
+            cosmos_features: "--features kernel_6_16"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      # --- Nix + Cachix (for pre-built kernels) ---
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Configure Cachix
+        uses: cachix/cachix-action@v14
+        with:
+          name: sched-ext
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipAddingSubstituter: false
+          useDaemon: false
+
+      # --- System dependencies ---
+      - name: Configure fast APT mirror
+        uses: vegardit/fast-apt-mirror.sh@1.4.1
+        with:
+          exclude-current: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -f -y \
+            bison cmake cpio elfutils file flex gcc gcc-multilib git \
+            iproute2 jq kbd kmod libcap-dev libelf-dev libunwind-dev \
+            libzstd-dev linux-tools-common make ninja-build pahole \
+            pkg-config python3-dev python3-pip python3-requests \
+            qemu-kvm rsync stress-ng udev zstd libseccomp-dev \
+            libcap-ng-dev llvm-19 clang-19 python3-full dwarves \
+            rustup protobuf-compiler
+          echo /usr/lib/llvm-19/bin >> $GITHUB_PATH
+
+      # --- Rust toolchain ---
+      - name: Install Rust toolchains
+        run: |
+          rustup default nightly
+          rustup component add rust-src
+
+      # --- KVM setup ---
+      - name: Setup KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # --- virtme-ng ---
+      - name: Install virtme-ng
+        run: sudo pip3 install virtme-ng --break-system-packages
+
+      # --- Build schbench ---
+      - name: Build schbench
+        run: |
+          git clone https://git.kernel.org/pub/scm/linux/kernel/git/mason/schbench.git /tmp/schbench
+          cd /tmp/schbench
+          make
+          sudo cp schbench /usr/local/bin/
+
+      # --- Rust cache ---
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: scx
+          prefix-key: "cosmos-${{ matrix.kernel_display }}"
+
+      # --- Load kernel from Cachix ---
+      - name: Load kernel (${{ matrix.kernel_display }})
+        run: |
+          KERNEL_NAME="${{ matrix.kernel }}"
+          echo "Building/fetching kernel: $KERNEL_NAME"
+          KERNEL_STORE_PATH=$(nix build --no-link --print-out-paths ./scx/.nix#kernel_${KERNEL_NAME})
+          echo "KERNEL_STORE_PATH=$KERNEL_STORE_PATH" >> $GITHUB_ENV
+          echo "Kernel at: $KERNEL_STORE_PATH"
+          ls -la "$KERNEL_STORE_PATH/bzImage"
+
+      # --- Build scx_cosmos ---
+      - name: Build scx_cosmos (${{ matrix.kernel_display }})
+        run: |
+          cd scx/scheds/rust_only/scx_cosmos
+          cargo build --release ${{ matrix.cosmos_features }}
+          echo "COSMOS_BIN=$(pwd)/target/release/scx_cosmos" >> $GITHUB_ENV
+
+      # --- Print debug info ---
+      - name: Debug info
+        run: |
+          echo "Kernel: ${{ env.KERNEL_STORE_PATH }}"
+          echo "Cosmos binary: ${{ env.COSMOS_BIN }}"
+          grep 'model name' /proc/cpuinfo | head -1
+          file "${{ env.COSMOS_BIN }}"
+
+      # --- Run VM test ---
+      - name: Test scx_cosmos (${{ matrix.kernel_display }})
+        run: |
+          chmod +x .github/scripts/test-scheduler.sh
+          .github/scripts/test-scheduler.sh \
+            "${{ env.KERNEL_STORE_PATH }}/bzImage" \
+            "${{ env.COSMOS_BIN }}" \
+            30
+
+      # --- Upload logs ---
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.kernel_display }}
+          path: "*.ci.log"
+          compression-level: 9
