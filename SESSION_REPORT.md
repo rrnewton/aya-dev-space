@@ -36,7 +36,7 @@ kernel integration tests.
 | struct_ops callbacks | 9 | 15 (100% of C) |
 | Auxiliary BPF programs | 0 | 3 (fentry + 2 tp_btf) |
 | BPF globals populated | 3 | 12 (all userspace-settable) |
-| Total commits | — | **79** (37 parent + 21 scx + 21 aya) |
+| Total commits | — | **85** (41 parent + 22 scx + 22 aya) |
 
 ### Commits (scx submodule — 21 commits)
 
