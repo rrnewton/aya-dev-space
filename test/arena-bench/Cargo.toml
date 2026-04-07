@@ -1,0 +1,12 @@
+[package]
+name = "arena-bench"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "arena-bench"
+path = "src/main.rs"
+
+[dependencies]
+aya-arena-common = { path = "../../aya/aya-arena-common" }
