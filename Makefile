@@ -44,7 +44,10 @@ test-vm: build ## Build and run cosmos in a virtme-ng VM (30s)
 	./test_cosmos_vm.sh 30
 
 container: ## Build a container image with the cosmos scheduler
+	@echo "=== Extracting vmlinux BTF for container build ==="
+	@cp /sys/kernel/btf/vmlinux vmlinux
 	podman build -t scx_cosmos_rs .
+	@rm -f vmlinux
 
 clean: ## Clean build artifacts
 	cd $(COSMOS_DIR) && cargo clean

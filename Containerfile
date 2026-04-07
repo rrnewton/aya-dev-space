@@ -1,10 +1,11 @@
 # Build stage: compile the pure-Rust cosmos scheduler
 FROM rust:latest AS builder
 
-# Install system deps
+# Install system deps (clang for BPF, bpftool for vmlinux BTF extraction)
 RUN apt-get update && apt-get install -y \
     clang \
     libclang-dev \
+    bpftool \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust nightly + BPF toolchain
@@ -14,13 +15,16 @@ RUN rustup toolchain install nightly \
 
 WORKDIR /build
 
+# Copy host vmlinux BTF for eBPF build (extracted before container build)
+COPY vmlinux /build/vmlinux
+
 # Copy source trees (aya + scx)
 COPY aya/ aya/
 COPY scx/ scx/
 
-# Build the scheduler
+# Build the scheduler using the copied vmlinux BTF
 WORKDIR /build/scx/scheds/rust_only/scx_cosmos
-RUN cargo build --release
+RUN SCX_VMLINUX_BTF=/build/vmlinux cargo build --release
 
 # Runtime stage: minimal image with just the binary
 FROM debian:bookworm-slim
