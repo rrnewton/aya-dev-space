@@ -8,7 +8,7 @@
 
 This session delivered a **production-stable pure-Rust BPF scheduler** (scx_mitosis),
 a **shared-memory arena data structure library**, and critical **aya infrastructure
-improvements**. 301 tests pass with 0 failures across unit tests and VM-based
+improvements**. 310 tests pass with 0 failures across unit tests and VM-based
 kernel integration tests.
 
 ### Key Achievements
@@ -26,18 +26,19 @@ kernel integration tests.
 
 ## MITOSIS Port Progress
 
-**PORT_TODOs: 77 → 24** (69% reduction)
+**PORT_TODOs: 77 → 5** (94% reduction)
 
 | Metric | Start | End |
 |--------|-------|-----|
-| BPF PORT_TODOs | ~77 | 24 |
-| Userspace PORT_TODOs | 11 | 0 |
+| BPF PORT_TODOs | ~77 | **5** |
+| Userspace PORT_TODOs | 11 | **0** |
 | Lines of Rust | ~2000 | 3,639 |
 | struct_ops callbacks | 9 | 15 (100% of C) |
 | Auxiliary BPF programs | 0 | 3 (fentry + 2 tp_btf) |
 | BPF globals populated | 3 | 12 (all userspace-settable) |
+| Total commits | — | **79** (37 parent + 21 scx + 21 aya) |
 
-### Commits (scx submodule — 18 commits)
+### Commits (scx submodule — 21 commits)
 
 1. `9b85936b` Full userspace loader with topology and CLI
 2. `83bc1214` PORT_TODO audit + core callbacks (select_cpu, enqueue, dispatch, running, stopping)
@@ -126,13 +127,14 @@ delete predecessor bug during review.
 
 ## Test Results Matrix
 
-### Unit Tests — 273 passed, 0 failed
+### Unit Tests — 307 passed, 0 failed
 
 | Suite | Tests | Status |
 |-------|-------|--------|
 | aya (loader) | 107 | ✅ |
 | aya-arena-common | 65 | ✅ |
-| aya-obj | 101 | ✅ |
+| aya-core-postprocessor | 32 | ✅ |
+| aya-obj | 103 | ✅ |
 
 ### VM Scheduler Tests — 28 passed, 0 failed
 
@@ -157,20 +159,29 @@ delete predecessor bug during review.
 | cosmos stress combo | 600s | 16 CPU, NUMA | ✅ |
 | simple stress combo | 120s | 16 CPU, NUMA | ✅ |
 
-**Grand total: 301 tests, 0 failures.**
+**Grand total: 310+ tests, 0 failures.**
 
 ## Known Issues & Remaining Work
 
-### Blocking (24 BPF PORT_TODOs)
+### Remaining PORT_TODOs (5 BPF, 0 userspace)
+
+All 5 remaining PORT_TODOs are infrastructure-blocked — they require new
+features in aya or scx-ebpf that don't exist yet. Zero actionable items remain.
 
 | Category | Count | Blocker |
 |----------|-------|---------|
-| kptr infrastructure (cpumask management) | ~8 | aya kptr_xchg for maps |
-| scx_bpf_error/scx_bpf_dump wrappers | ~6 | kfunc wrapper needed |
-| bpf_for_each CSS/task iterator | ~3 | BPF iterator support |
-| Atomic CAS (BPF_ATOMIC\|BPF_CMPXCHG) | ~2 | Rust BPF codegen |
-| llc_to_cpus[] array (too large for override_global) | 1 | Need BpfArray map |
-| Other (UEI, cpuset introspection) | ~4 | Various |
+| scx_bpf_dump kfunc wrapper | ~2 | Variadic kfunc not yet wrapped |
+| BPF iterator (CSS/task walk) | ~1 | BPF iterator support in aya |
+| Atomic CAS codegen | ~1 | Rust BPF can't emit BPF_ATOMIC\|BPF_CMPXCHG |
+| Other (UEI exit reporting) | ~1 | UEI infrastructure |
+
+Previously blocked items now RESOLVED:
+- ✅ kptr infrastructure — cpumask kptrs implemented via Kptr<T> wrapper
+- ✅ Cell cpumask management — update_task_cpumask fully implemented
+- ✅ init_cgrp_ctx_with_ancestors — hierarchy walk implemented
+- ✅ BPF timer — periodic reconfiguration callback implemented
+- ✅ Stats map reading — percpu array wired to userspace
+- ✅ CO-RE field reads — core_read!/core_write! for nested structs
 
 ### Kernel Compatibility
 

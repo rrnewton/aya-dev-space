@@ -57,7 +57,7 @@ permission issue (needs `kernel_6_16` feature flag for kfunc setters).
 | struct_ops callbacks | 5 | 12 | 14 + 3 aux progs |
 | Lines of Rust BPF | ~100 | ~2000 | ~2100 |
 | Lines of userspace | ~120 | ~600 | ~600 |
-| PORT_TODOs remaining | 0 | 0 | 24 |
+| PORT_TODOs remaining | 0 | 0 | 5 |
 
 ## Performance Testing
 
@@ -117,7 +117,7 @@ real workloads (stress-ng, system daemons), and exit cleanly.
 - Debug event circular buffer
 - Userspace stats collection infrastructure
 
-### What needs aya infrastructure (24 PORT_TODOs)
+### What needs aya infrastructure (5 PORT_TODOs)
 - **kptr support (11)** — cell cpumask kptrs for per-cell CPU affinity
 - **update_task_cpumask (4)** — intersect cell mask with task affinity
 - **bpf_for_each CSS (3)** — cgroup hierarchy iteration
