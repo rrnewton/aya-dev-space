@@ -34,7 +34,7 @@ cd "$COSMOS_DIR"
 cargo build --release 2>&1 | tail -5
 echo ""
 
-BINARY="$COSMOS_DIR/target/release/scx_cosmos"
+BINARY="$COSMOS_DIR/target/release/scx_cosmos_rs"
 echo "Binary:   $BINARY"
 echo "VM kernel: $KERNEL"
 echo "Duration:  ${DURATION}s"

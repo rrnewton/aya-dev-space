@@ -12,7 +12,7 @@ cd "$COSMOS_DIR"
 cargo build --release 2>&1 | tail -5
 echo ""
 
-BINARY="$COSMOS_DIR/target/release/scx_cosmos"
+BINARY="$COSMOS_DIR/target/release/scx_cosmos_rs"
 echo "Binary: $BINARY"
 echo "Kernel: $(uname -r)"
 echo "Duration: ${DURATION}s (pass seconds as first arg to change)"

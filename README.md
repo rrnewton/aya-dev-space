@@ -80,19 +80,46 @@ we built a post-processor that:
 - **Safe map `get_ref()`/`get_mut()`** — return Rust references from BPF map lookups
 - **`core_read!`/`core_write!`** — safe macros for kernel struct field access
 
+## Quick Start
+
+```bash
+# Install dependencies (Rust nightly, bpf-linker, clang)
+make install-deps
+
+# Build
+make build
+
+# Run on this host (30s, requires sudo + sched_ext kernel 6.12+)
+make test
+
+# Run in a VM (requires virtme-ng)
+make test-vm
+
+# Build a container image
+make container
+```
+
 ## Building
 
 ```bash
-# Cosmos scheduler
-cd scx/scheds/rust_only/scx_cosmos
-cargo build --release
+# Build the pure-Rust cosmos scheduler (scx_cosmos_rs)
+make build
+# or directly:
+cd scx/scheds/rust_only/scx_cosmos && cargo build --release
 
 # For kernel 6.16+:
-SCX_VMLINUX_BTF=/lib/modules/6.16.0/build/vmlinux \
-  cargo build --release --features kernel_6_16
+make build-6.16
 
-# Run (requires root)
-sudo ./target/release/scx_cosmos
+# Run (requires root + sched_ext kernel)
+sudo ./scx/scheds/rust_only/scx_cosmos/target/release/scx_cosmos_rs
+```
+
+### Container build
+
+```bash
+podman build -t scx_cosmos_rs .
+# The container holds the binary at /usr/local/bin/scx_cosmos_rs
+# It needs to run with --privileged to attach BPF programs
 ```
 
 ## Status
