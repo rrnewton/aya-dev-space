@@ -8,7 +8,7 @@
 
 This session delivered a **production-stable pure-Rust BPF scheduler** (scx_mitosis),
 a **shared-memory arena data structure library**, and critical **aya infrastructure
-improvements**. 310 tests pass with 0 failures across unit tests and VM-based
+improvements**. 340+ tests pass with 0 failures across unit tests and VM-based
 kernel integration tests.
 
 ### Key Achievements
@@ -26,17 +26,17 @@ kernel integration tests.
 
 ## MITOSIS Port Progress
 
-**PORT_TODOs: 77 → 5** (94% reduction)
+**PORT_TODOs: 77 → 9** (88% reduction)
 
 | Metric | Start | End |
 |--------|-------|-----|
-| BPF PORT_TODOs | ~77 | **5** |
+| BPF PORT_TODOs | ~77 | **9** |
 | Userspace PORT_TODOs | 11 | **0** |
 | Lines of Rust | ~2000 | 3,639 |
 | struct_ops callbacks | 9 | 15 (100% of C) |
 | Auxiliary BPF programs | 0 | 3 (fentry + 2 tp_btf) |
 | BPF globals populated | 3 | 12 (all userspace-settable) |
-| Total commits | — | **85** (41 parent + 22 scx + 22 aya) |
+| Total commits | — | **92** (45 parent + 23 scx + 24 aya) |
 
 ### Commits (scx submodule — 21 commits)
 
@@ -136,7 +136,7 @@ delete predecessor bug during review.
 | aya-core-postprocessor | 32 | ✅ |
 | aya-obj | 103 | ✅ |
 
-### VM Scheduler Tests — 28 passed, 0 failed
+### VM Scheduler Tests — 33+ passed, 0 failed
 
 | Test | Duration | Topology | Status |
 |------|----------|----------|--------|
@@ -159,29 +159,35 @@ delete predecessor bug during review.
 | cosmos stress combo | 600s | 16 CPU, NUMA | ✅ |
 | simple stress combo | 120s | 16 CPU, NUMA | ✅ |
 
-**Grand total: 310+ tests, 0 failures.**
+**Grand total: 340+ tests, 0 failures.**
 
 ## Known Issues & Remaining Work
 
-### Remaining PORT_TODOs (5 BPF, 0 userspace)
+### Remaining PORT_TODOs (9 BPF, 0 userspace)
 
-All 5 remaining PORT_TODOs are infrastructure-blocked — they require new
-features in aya or scx-ebpf that don't exist yet. Zero actionable items remain.
+All remaining PORT_TODOs are infrastructure-blocked.
 
 | Category | Count | Blocker |
 |----------|-------|---------|
 | scx_bpf_dump kfunc wrapper | ~2 | Variadic kfunc not yet wrapped |
-| BPF iterator (CSS/task walk) | ~1 | BPF iterator support in aya |
+| scx_bpf_error kfunc wrapper | ~2 | Variadic kfunc not yet wrapped |
+| BPF iterator (CSS/task walk) | ~1 | BPF open-coded iterator support |
 | Atomic CAS codegen | ~1 | Rust BPF can't emit BPF_ATOMIC\|BPF_CMPXCHG |
-| Other (UEI exit reporting) | ~1 | UEI infrastructure |
+| TaskCtx cpumask kptr in task storage | ~1 | aya kptr_xchg for task storage maps |
+| Cpuset introspection (bpf_core_type_matches) | ~1 | CO-RE type matching |
+| UEI exit reporting | ~1 | UEI infrastructure |
 
-Previously blocked items now RESOLVED:
-- ✅ kptr infrastructure — cpumask kptrs implemented via Kptr<T> wrapper
-- ✅ Cell cpumask management — update_task_cpumask fully implemented
-- ✅ init_cgrp_ctx_with_ancestors — hierarchy walk implemented
-- ✅ BPF timer — periodic reconfiguration callback implemented
-- ✅ Stats map reading — percpu array wired to userspace
-- ✅ CO-RE field reads — core_read!/core_write! for nested structs
+### Kernel Compatibility (multi-kernel verified)
+
+| Kernel | scx_simple | scx_cosmos | scx_mitosis |
+|--------|-----------|------------|-------------|
+| 6.9 | ❌ | ❌ | ❌ |
+| **6.13** | **✅** | **✅** | **✅** |
+| **6.16** | **✅** | ❌ | ❌ |
+| **6.17** | **✅** | ❌ | ❌ |
+
+The struct_ops field remapping fix enables scx_simple on 6.16/6.17.
+Cosmos/mitosis need additional CO-RE fixes for newer kernels.
 
 ### Kernel Compatibility
 
