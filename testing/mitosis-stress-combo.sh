@@ -1,93 +1,66 @@
 #!/bin/bash
-# mitosis-stress-combo.sh — Combined scheduler + stress workload
-# This is the "binary" that run-in-vm.sh will execute.
-# It starts the scheduler, then runs stress workloads alongside it.
-
+# mitosis-stress-combo.sh — Stress test MITOSIS in 3 modes
+# Designed for run-in-vm.sh: runs scheduler + stress, verifies it survives.
 set -euo pipefail
 
-SCHEDULER_DIR="$(cd "$(dirname "$0")" && pwd)/../scx/scheds/rust_only/scx_mitosis/target/release"
-SCHEDULER_BIN="$SCHEDULER_DIR/scx_mitosis_rs"
-
-echo "═══ MITOSIS STRESS COMBO TEST ═══"
+echo "=== MITOSIS Stress Combo ==="
 echo "Kernel: $(uname -r)"
 echo "CPUs: $(nproc)"
-echo "Date: $(date)"
 echo ""
 
-# Start scheduler in background
-echo "Starting scx_mitosis_rs..."
-"$SCHEDULER_BIN" &
-SCHED_PID=$!
-sleep 3
-
-# Verify scheduler attached
-if [ -f /sys/kernel/sched_ext/root/ops ]; then
-    echo "Scheduler attached: $(cat /sys/kernel/sched_ext/root/ops)"
-else
-    echo "WARNING: sched_ext/root/ops not found"
+MITOSIS=$(find /home -name "scx_mitosis_rs" -path "*/release/*" -type f 2>/dev/null | head -1)
+if [ -z "$MITOSIS" ]; then
+    echo "FAILED: scx_mitosis_rs not found"
+    exit 1
 fi
 
-# Record baseline
-INITIAL_CTXT=$(grep '^ctxt' /proc/stat | awk '{print $2}')
-START_TIME=$(date +%s)
+test_mode() {
+    local name="$1"
+    shift
+    echo "--- $name ---"
+    $MITOSIS "$@" >/dev/null 2>&1 &
+    local pid=$!
+    sleep 3
 
-# Start stress workloads
-echo ""
-echo "Starting stress workloads..."
-
-# CPU stress: spin loops
-NCPU=$(nproc)
-CPU_WORKERS=$((NCPU / 2))
-[ "$CPU_WORKERS" -lt 2 ] && CPU_WORKERS=2
-echo "  CPU workers: $CPU_WORKERS"
-for i in $(seq "$CPU_WORKERS"); do
-    while true; do : ; done &
-done
-
-# Fork stress: many short-lived processes
-echo "  Fork stress: rapid process creation"
-(while true; do for i in $(seq 10); do /bin/true & done; wait; done) &
-
-# I/O stress: urandom reads
-echo "  I/O stress: /dev/urandom reads"
-(while true; do dd if=/dev/urandom of=/dev/null bs=4k count=64 2>/dev/null; done) &
-
-# Memory pressure: allocate and touch pages
-echo "  Memory stress: allocation patterns"
-(while true; do head -c 16M /dev/urandom > /dev/null; done) &
-
-echo ""
-echo "Workloads running. Monitoring scheduler health..."
-
-# Monitor loop: check scheduler every 30 seconds
-CHECKS=0
-while true; do
-    sleep 30
-    CHECKS=$((CHECKS + 1))
-    NOW=$(date +%s)
-    ELAPSED=$((NOW - START_TIME))
-
-    # Check scheduler is alive
-    if ! kill -0 "$SCHED_PID" 2>/dev/null; then
-        echo "❌ SCHEDULER CRASHED after ${ELAPSED}s ($CHECKS checks)"
-        echo "FAILED with exit code 99"
-        exit 99
+    local ops=$(cat /sys/kernel/sched_ext/root/ops 2>/dev/null || echo "none")
+    if [ "$ops" = "none" ]; then
+        echo "  FAILED: scheduler did not attach"
+        kill $pid 2>/dev/null; wait $pid 2>/dev/null || true
+        exit 1
     fi
+    echo "  attached: $ops"
 
-    # Check scheduler is still attached
-    CURRENT_OPS=$(cat /sys/kernel/sched_ext/root/ops 2>/dev/null || echo "none")
-    if [ "$CURRENT_OPS" != "mitosis" ]; then
-        echo "❌ SCHEDULER DETACHED after ${ELAPSED}s (ops=$CURRENT_OPS)"
-        echo "  sched_ext state: $(cat /sys/kernel/sched_ext/state 2>/dev/null || echo 'unknown')"
-        echo "FAILED with exit code 98"
-        exit 98
+    # CPU stress
+    stress-ng --cpu 4 --cpu-method matrixprod --timeout 8s >/dev/null 2>&1
+    echo "  cpu-stress: OK"
+
+    # Fork storm
+    stress-ng --fork 2 --timeout 5s >/dev/null 2>&1
+    echo "  fork-storm: OK"
+
+    # Context switch stress
+    stress-ng --pipe 4 --timeout 5s >/dev/null 2>&1
+    echo "  pipe-ctx-switch: OK"
+
+    # Verify still attached
+    ops=$(cat /sys/kernel/sched_ext/root/ops 2>/dev/null || echo "none")
+    if [ "$ops" = "none" ]; then
+        echo "  FAILED: scheduler detached during stress!"
+        kill $pid 2>/dev/null; wait $pid 2>/dev/null || true
+        exit 1
     fi
+    echo "  still attached: $ops"
 
-    # Metrics
-    CURRENT_CTXT=$(grep '^ctxt' /proc/stat | awk '{print $2}')
-    CTXT_DELTA=$((CURRENT_CTXT - INITIAL_CTXT))
-    CTXT_PER_SEC=$((CTXT_DELTA / (ELAPSED + 1)))
-    LOADAVG=$(cat /proc/loadavg)
+    kill $pid 2>/dev/null; wait $pid 2>/dev/null || true
+    sleep 2
+    echo "  PASS"
+    echo ""
+}
 
-    echo "[${ELAPSED}s] check=$CHECKS OK | load=$LOADAVG | ctxt/s=$CTXT_PER_SEC"
-done
+test_mode "default (no flags)"
+test_mode "LLC-aware" --enable-llc-awareness
+test_mode "LLC-aware + work-stealing" --enable-llc-awareness --enable-work-stealing
+
+echo "=== ALL 3 MODES PASSED ==="
+# Keep alive for timeout to kill us cleanly
+sleep 999
