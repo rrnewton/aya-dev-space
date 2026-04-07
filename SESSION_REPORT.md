@@ -186,17 +186,21 @@ All remaining PORT_TODOs are infrastructure-blocked.
 |--------|-----------|------------|-------------|
 | 6.9 | ❌ | ❌ | ❌ |
 | **6.13** | **✅** | **✅** | **✅** |
-| **6.16** | **✅** | **✅** | **✅** |
-| **6.17** | **✅** | **✅** | **✅** |
+| **6.16** | **✅** | ❌ EPERM | **✅** |
+| **6.17** | **✅** | ❌ EPERM | ❌ EINVAL |
 
-All three pure-Rust BPF schedulers now work on 6.13, 6.16, and 6.17.
-This was achieved through 7 aya infrastructure bug fixes:
+scx_simple works on all 3 modern kernels (struct_ops fix).
+scx_mitosis works on 6.13 and 6.16 (CO-RE fixes).
+scx_cosmos fails on 6.16/6.17 (Permission denied — likely BPF token/CAP issue).
+scx_mitosis fails on 6.17 (EINVAL — likely further struct_ops changes).
+
+7 aya infrastructure bug fixes contributed to kernel compatibility:
 1. CO-RE postprocessor: strip stale core_relo records
 2. CO-RE postprocessor: fix access string offset corruption
 3. struct_ops: BTF-aware field remapping for kernel version differences
 4. fixup_kptr_types: extend to rewrite STRUCT member kptrs
 5. BTF sanitization: skip unknown map types in BPF_MAP_CREATE
-6. core_read! macro: fix chained pointer dereference
+6. CO-RE: Int/Ptr compatibility for cross-kernel relocation
 7. Clippy warning elimination across aya workspace
 
 ### Kernel Compatibility
