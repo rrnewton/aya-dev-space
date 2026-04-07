@@ -15,7 +15,7 @@ This is a development workspace that submodules two repos:
 
 Plus project-level tracking:
 
-- **`.beads/`** — issue tracker ([minibeads](https://github.com/minibeads/minibeads))
+- **`.beads/`** — issue tracker ([minibeads](https://crates.io/crates/minibeads))
 - **`docs/`** — architecture research and port mapping
 - **`results/`** — benchmark data (EEVDF vs C cosmos vs Rust cosmos)
 - **`testing/`** — VM test scripts and benchmark harness
