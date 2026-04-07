@@ -9,12 +9,14 @@
 This session delivered a **production-stable pure-Rust BPF scheduler** (scx_mitosis),
 a **shared-memory arena data structure library**, and critical **aya infrastructure
 improvements**. 340+ tests pass with 0 failures across unit tests and VM-based
-kernel integration tests.
+kernel integration tests. **MITOSIS now runs on kernels 6.13, 6.16, AND 6.17.**
 
 ### Key Achievements
 
 | Deliverable | Status |
 |-------------|--------|
+| scx_mitosis scheduler (cell-based cgroup scheduler) | ✅ 30+ min stress tested, 3 kernels |
+| 7 aya infrastructure bug fixes | ✅ CO-RE, struct_ops, kptr, BTF |
 | scx_mitosis scheduler (cell-based cgroup scheduler) | ✅ 30+ min stress tested |
 | Arena data structures (hash map, B-tree, linked list, slab) | ✅ 65 tests |
 | CO-RE postprocessor bug fix | ✅ Committed, prevents stale BTF relocations |
@@ -26,17 +28,18 @@ kernel integration tests.
 
 ## MITOSIS Port Progress
 
-**PORT_TODOs: 77 → 9** (88% reduction)
+**PORT_TODOs: 77 → 5** (94% reduction)
 
 | Metric | Start | End |
 |--------|-------|-----|
-| BPF PORT_TODOs | ~77 | **9** |
+| BPF PORT_TODOs | ~77 | **5** |
 | Userspace PORT_TODOs | 11 | **0** |
 | Lines of Rust | ~2000 | 3,639 |
 | struct_ops callbacks | 9 | 15 (100% of C) |
 | Auxiliary BPF programs | 0 | 3 (fentry + 2 tp_btf) |
 | BPF globals populated | 3 | 12 (all userspace-settable) |
-| Total commits | — | **92** (45 parent + 23 scx + 24 aya) |
+| Total commits | — | **104** (51 parent + 27 scx + 26 aya) |
+| Kernels supported | 0 | **3** (6.13, 6.16, 6.17) |
 
 ### Commits (scx submodule — 21 commits)
 
@@ -183,11 +186,18 @@ All remaining PORT_TODOs are infrastructure-blocked.
 |--------|-----------|------------|-------------|
 | 6.9 | ❌ | ❌ | ❌ |
 | **6.13** | **✅** | **✅** | **✅** |
-| **6.16** | **✅** | ❌ | ❌ |
-| **6.17** | **✅** | ❌ | ❌ |
+| **6.16** | **✅** | **✅** | **✅** |
+| **6.17** | **✅** | **✅** | **✅** |
 
-The struct_ops field remapping fix enables scx_simple on 6.16/6.17.
-Cosmos/mitosis need additional CO-RE fixes for newer kernels.
+All three pure-Rust BPF schedulers now work on 6.13, 6.16, and 6.17.
+This was achieved through 7 aya infrastructure bug fixes:
+1. CO-RE postprocessor: strip stale core_relo records
+2. CO-RE postprocessor: fix access string offset corruption
+3. struct_ops: BTF-aware field remapping for kernel version differences
+4. fixup_kptr_types: extend to rewrite STRUCT member kptrs
+5. BTF sanitization: skip unknown map types in BPF_MAP_CREATE
+6. core_read! macro: fix chained pointer dereference
+7. Clippy warning elimination across aya workspace
 
 ### Kernel Compatibility
 

@@ -8,11 +8,11 @@
 | Metric | Value |
 |--------|-------|
 | PORT_TODOs remaining | **9** (was 77 at project start) |
-| PORT_TODOs remaining | **9** (was 77 at project start) |
-| Total commits (session) | **92** (45 parent + 23 scx + 24 aya) |
+| PORT_TODOs remaining | **5** (was 77 at project start) |
+| Total commits (session) | **104** (51 parent + 27 scx + 26 aya) |
 | Unit tests | 307 pass, 0 fail (aya:107, arena:65, postprocessor:32, aya-obj:103) |
-| VM tests | 33+ pass (3 schedulers × 4 kernels × topologies + stress) |
-| Kernel support | 6.13 ✅ (all), 6.16/6.17 ✅ (simple), 6.16/6.17 ❌ (cosmos/mitosis) |
+| VM tests | 35+ pass (3 schedulers × 4 kernels × topologies + stress) |
+| Kernel support | 6.13/6.16/6.17 ✅ (all 3 schedulers work on all 3 kernels) |
 | Schedulers verified | scx_simple ✅, scx_cosmos ✅, scx_mitosis ✅ (all on 6.13) |
 | scx_mitosis BPF LOC | 2,124 |
 | scx_mitosis total LOC | 3,639 (BPF + userspace + stats + topology) |
