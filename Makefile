@@ -43,8 +43,15 @@ test: build ## Build and run cosmos on this host (30s, requires sudo)
 test-vm: build ## Build and run cosmos in a virtme-ng VM (30s)
 	./test_cosmos_vm.sh 30
 
-container: ## Build a container image with the cosmos scheduler
+container: build ## Build container image and extract scx_cosmos_rs binary
 	podman build -t scx_cosmos_rs .
+	podman create --name scx_cosmos_rs_tmp scx_cosmos_rs
+	podman cp scx_cosmos_rs_tmp:/usr/local/bin/scx_cosmos_rs ./scx_cosmos_rs
+	podman rm scx_cosmos_rs_tmp
+	@echo ""
+	@echo "=== Binary extracted ==="
+	@ls -lh ./scx_cosmos_rs
+	@echo "Run with: sudo ./scx_cosmos_rs"
 
 clean: ## Clean build artifacts
 	cd $(COSMOS_DIR) && cargo clean

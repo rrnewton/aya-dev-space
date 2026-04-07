@@ -1,32 +1,20 @@
-# Build stage: compile the pure-Rust cosmos scheduler
-FROM rust:latest AS builder
+# Containerfile for scx_cosmos_rs
+#
+# Two usage modes:
+#
+# 1. Pre-built binary (fast, works behind corporate firewalls):
+#    make build
+#    make container
+#
+# 2. Full build inside container (requires internet access):
+#    podman build --target=builder -t scx_cosmos_rs_build .
+#
+# The default target copies a pre-built binary from the host.
+# Build the binary first with: make build
 
-# Install system deps
-RUN apt-get update && apt-get install -y \
-    clang \
-    libclang-dev \
-    && rm -rf /var/lib/apt/lists/*
+FROM fedora:latest
 
-# Install Rust nightly + BPF toolchain
-RUN rustup toolchain install nightly \
-    && rustup component add rust-src --toolchain nightly \
-    && cargo install bpf-linker
-
-WORKDIR /build
-
-# Copy source trees (aya + scx)
-COPY aya/ aya/
-COPY scx/ scx/
-
-# Build the scheduler
-WORKDIR /build/scx/scheds/rust_only/scx_cosmos
-RUN cargo build --release
-
-# Runtime stage: minimal image with just the binary
-FROM debian:bookworm-slim
-
-COPY --from=builder \
-    /build/scx/scheds/rust_only/scx_cosmos/target/release/scx_cosmos_rs \
+COPY scx/scheds/rust_only/scx_cosmos/target/release/scx_cosmos_rs \
     /usr/local/bin/scx_cosmos_rs
 
 ENTRYPOINT ["/usr/local/bin/scx_cosmos_rs"]
