@@ -35,8 +35,12 @@ fi
 echo "=== test-scheduler: $SCHED_NAME on $(basename "$KERNEL") ==="
 echo "    workload: schbench for ${WORKLOAD_SECS}s"
 
-# Build in-VM script: start scheduler in background, run workload, stop scheduler
-VM_SCRIPT="$(cat <<INNEREOF
+rm -f /tmp/test-sched-output
+
+# Write the in-VM script to a file (vng --exec expects a path, not inline text)
+VM_SCRIPT_FILE=$(mktemp /tmp/test-sched-XXXXXX.sh)
+cat > "$VM_SCRIPT_FILE" <<INNEREOF
+#!/bin/bash
 set -e
 echo ">>> Booting, loading $SCHED_NAME ..."
 
@@ -78,12 +82,11 @@ fi
 
 echo ">>> PASSED: $SCHED_NAME ran successfully"
 INNEREOF
-)"
+chmod +x "$VM_SCRIPT_FILE"
 
-rm -f /tmp/test-sched-output
 timeout --preserve-status ${GUEST_TIMEOUT} \
-    vng --user root -m 4G --cpu 8 --rw -v -r "$KERNEL" -- \
-        "$VM_SCRIPT" \
+    vng --user root -m 4G --cpus 8 --rw -v -r "$KERNEL" \
+        --exec "bash $VM_SCRIPT_FILE" \
         2> >(tee /tmp/test-sched-output) </dev/null
 
 # Check output for failures
