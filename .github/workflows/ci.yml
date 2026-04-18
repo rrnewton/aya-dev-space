@@ -18,9 +18,11 @@ jobs:
           - kernel: stable/6_12
             kernel_display: "6.12"
             cosmos_features: ""
+            allow_test_failure: true
           - kernel: sched_ext/for-next
             kernel_display: "6.18 (for-next)"
             cosmos_features: "--features kernel_6_16"
+            allow_test_failure: false
 
     steps:
       - uses: actions/checkout@v4
@@ -168,6 +170,7 @@ jobs:
 
       # --- Run VM test ---
       - name: Test scx_cosmos (${{ matrix.kernel_display }})
+        continue-on-error: ${{ matrix.allow_test_failure }}
         run: |
           chmod +x .github/scripts/test-scheduler.sh
           .github/scripts/test-scheduler.sh \

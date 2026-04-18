@@ -73,14 +73,19 @@ wait \$SCHED_PID 2>/dev/null || true
 # Check dmesg for problems
 echo ">>> Checking dmesg for errors ..."
 dmesg > /tmp/dmesg.log
-if grep -iE 'BUG:|WARNING:|panic|KASAN|UBSAN|general protection fault' /tmp/dmesg.log | \
+# Filter out known-harmless messages before checking for real errors
+# Use word-boundary matching for 'panic' to avoid matching boot param 'panic=-1'
+if grep -iE 'BUG:|WARNING:|Kernel panic|KASAN|UBSAN|general protection fault' /tmp/dmesg.log | \
    grep -v 'Speculative Return Stack Overflow' | \
    grep -v 'RETBleed:' | \
-   grep -qiE 'BUG:|WARNING:|panic|KASAN|UBSAN|general protection fault'; then
+   grep -v 'Command line:' | \
+   grep -v 'Kernel command line:' | \
+   grep -qiE 'BUG:|WARNING:|Kernel panic|KASAN|UBSAN|general protection fault'; then
     echo ">>> KERNEL ERRORS DETECTED:"
-    grep -iE 'BUG:|WARNING:|panic|KASAN|UBSAN|general protection fault' /tmp/dmesg.log | \
+    grep -iE 'BUG:|WARNING:|Kernel panic|KASAN|UBSAN|general protection fault' /tmp/dmesg.log | \
       grep -v 'Speculative Return Stack Overflow' | \
-      grep -v 'RETBleed:'
+      grep -v 'RETBleed:' | \
+      grep -v 'Command line:'
     echo ">>> FAILED: kernel errors found"
     exit 1
 fi
@@ -106,7 +111,7 @@ if grep -v \
     -e "Speculative Return Stack Overflow" \
     -e "RETBleed:" \
     /tmp/test-sched-output 2>/dev/null | \
-    grep -qiE '\bBUG:\b|\bWARNING:\b|\berror\b.*sched|\bpanic\b'; then
+    grep -qiE '\bBUG:\b|\bWARNING:\b|\berror\b.*sched|Kernel panic'; then
     echo "=== FAIL: $SCHED_NAME (kernel errors in output) ==="
     cp /tmp/test-sched-output test-scheduler.ci.log 2>/dev/null || true
     exit 1
