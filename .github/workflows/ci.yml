@@ -59,6 +59,8 @@ jobs:
             qemu-kvm rsync stress-ng udev zstd libseccomp-dev \
             libcap-ng-dev llvm-19 clang-19 python3-full dwarves \
             rustup protobuf-compiler
+          sudo apt-get install -y "linux-tools-$(uname -r)" || \
+            sudo apt-get install -y linux-tools-generic || true
           echo /usr/lib/llvm-19/bin >> $GITHUB_PATH
 
       # --- Rust toolchain ---
