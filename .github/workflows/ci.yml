@@ -106,37 +106,54 @@ jobs:
           KERNEL_STORE_PATH=$(nix build --no-link --print-out-paths ./scx/.nix#kernel_${KERNEL_NAME})
           echo "KERNEL_STORE_PATH=$KERNEL_STORE_PATH" >> $GITHUB_ENV
           echo "Kernel at: $KERNEL_STORE_PATH"
-          ls -la "$KERNEL_STORE_PATH/bzImage"
-          echo "--- Kernel store contents ---"
           ls -la "$KERNEL_STORE_PATH/"
-          echo "--- Looking for vmlinux ---"
-          find "$KERNEL_STORE_PATH" -name "vmlinux*" -o -name "*.btf" 2>/dev/null | head -10
+
+      - name: Extract vmlinux from bzImage
+        run: |
+          # The Nix kernel build only outputs bzImage + System.map.
+          # Extract the raw vmlinux (with BTF) for bpftool.
+          BZIMAGE="${KERNEL_STORE_PATH}/bzImage"
+          VMLINUX="/tmp/vmlinux-target"
+
+          # Inline extract-vmlinux logic (from kernel scripts/extract-vmlinux)
+          extract_try() {
+            for pos in $(tr "$1\n$2" "\n$2=" < "$BZIMAGE" | grep -abo "^$2"); do
+              pos=${pos%%:*}
+              tail -c+$pos "$BZIMAGE" | $3 > "$VMLINUX" 2>/dev/null
+              if readelf -h "$VMLINUX" >/dev/null 2>&1; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          extract_try '\037\213\010' xy gunzip || \
+          extract_try '\3757zXZ\000' abcde unxz || \
+          extract_try '(\265/\375' xxx unzstd || \
+          extract_try 'BZh' xy bunzip2 || \
+          extract_try '\002!L\030' xxx 'lz4 -d' || true
+
+          if [ -f "$VMLINUX" ] && readelf -h "$VMLINUX" >/dev/null 2>&1; then
+            echo "SCX_VMLINUX_BTF=$VMLINUX" >> $GITHUB_ENV
+            echo "Extracted vmlinux: $(file "$VMLINUX" | head -1)"
+            bpftool btf dump file "$VMLINUX" format c 2>&1 | head -3
+          else
+            echo "WARNING: Could not extract vmlinux from bzImage"
+            echo "Will fall back to runner kernel BTF (/sys/kernel/btf/vmlinux)"
+          fi
 
       # --- Install bpf-linker ---
       - name: Install bpf-linker
-        run: cargo install bpf-linker --no-default-features
+        run: cargo +nightly install bpf-linker --no-default-features --features rust-llvm-22
 
       # --- Build scx_cosmos ---
       - name: Build scx_cosmos (${{ matrix.kernel_display }})
         run: |
           cd scx/scheds/rust_only/scx_cosmos
-          # Use target kernel's vmlinux BTF, not the CI runner's kernel
-          VMLINUX_BTF=""
-          for candidate in \
-            "$KERNEL_STORE_PATH/vmlinux" \
-            "$KERNEL_STORE_PATH/btf/vmlinux" \
-            "$KERNEL_STORE_PATH/System.map" \
-          ; do
-            if [ -f "$candidate" ]; then
-              VMLINUX_BTF="$candidate"
-              break
-            fi
-          done
-          if [ -n "$VMLINUX_BTF" ]; then
-            echo "Using vmlinux BTF: $VMLINUX_BTF"
-            export SCX_VMLINUX_BTF="$VMLINUX_BTF"
+          if [ -n "$SCX_VMLINUX_BTF" ]; then
+            echo "Using target kernel BTF: $SCX_VMLINUX_BTF"
           else
-            echo "WARNING: No vmlinux found in kernel store, using runner kernel BTF"
+            echo "Using runner kernel BTF: /sys/kernel/btf/vmlinux"
           fi
           cargo build --release ${{ matrix.cosmos_features }}
           echo "COSMOS_BIN=$(pwd)/target/release/scx_cosmos" >> $GITHUB_ENV
