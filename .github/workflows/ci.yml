@@ -156,7 +156,7 @@ jobs:
             echo "Using runner kernel BTF: /sys/kernel/btf/vmlinux"
           fi
           cargo build --release ${{ matrix.cosmos_features }}
-          echo "COSMOS_BIN=$(pwd)/target/release/scx_cosmos" >> $GITHUB_ENV
+          echo "COSMOS_BIN=$(pwd)/target/release/scx_cosmos_rs" >> $GITHUB_ENV
 
       # --- Print debug info ---
       - name: Debug info
