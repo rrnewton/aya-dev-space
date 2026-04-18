@@ -107,11 +107,37 @@ jobs:
           echo "KERNEL_STORE_PATH=$KERNEL_STORE_PATH" >> $GITHUB_ENV
           echo "Kernel at: $KERNEL_STORE_PATH"
           ls -la "$KERNEL_STORE_PATH/bzImage"
+          echo "--- Kernel store contents ---"
+          ls -la "$KERNEL_STORE_PATH/"
+          echo "--- Looking for vmlinux ---"
+          find "$KERNEL_STORE_PATH" -name "vmlinux*" -o -name "*.btf" 2>/dev/null | head -10
+
+      # --- Install bpf-linker ---
+      - name: Install bpf-linker
+        run: cargo install bpf-linker --no-default-features
 
       # --- Build scx_cosmos ---
       - name: Build scx_cosmos (${{ matrix.kernel_display }})
         run: |
           cd scx/scheds/rust_only/scx_cosmos
+          # Use target kernel's vmlinux BTF, not the CI runner's kernel
+          VMLINUX_BTF=""
+          for candidate in \
+            "$KERNEL_STORE_PATH/vmlinux" \
+            "$KERNEL_STORE_PATH/btf/vmlinux" \
+            "$KERNEL_STORE_PATH/System.map" \
+          ; do
+            if [ -f "$candidate" ]; then
+              VMLINUX_BTF="$candidate"
+              break
+            fi
+          done
+          if [ -n "$VMLINUX_BTF" ]; then
+            echo "Using vmlinux BTF: $VMLINUX_BTF"
+            export SCX_VMLINUX_BTF="$VMLINUX_BTF"
+          else
+            echo "WARNING: No vmlinux found in kernel store, using runner kernel BTF"
+          fi
           cargo build --release ${{ matrix.cosmos_features }}
           echo "COSMOS_BIN=$(pwd)/target/release/scx_cosmos" >> $GITHUB_ENV
 
