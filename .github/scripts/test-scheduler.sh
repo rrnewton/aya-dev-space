@@ -73,9 +73,14 @@ wait \$SCHED_PID 2>/dev/null || true
 # Check dmesg for problems
 echo ">>> Checking dmesg for errors ..."
 dmesg > /tmp/dmesg.log
-if grep -qiE 'BUG:|WARNING:|panic|KASAN|UBSAN|general protection fault' /tmp/dmesg.log; then
+if grep -iE 'BUG:|WARNING:|panic|KASAN|UBSAN|general protection fault' /tmp/dmesg.log | \
+   grep -v 'Speculative Return Stack Overflow' | \
+   grep -v 'RETBleed:' | \
+   grep -qiE 'BUG:|WARNING:|panic|KASAN|UBSAN|general protection fault'; then
     echo ">>> KERNEL ERRORS DETECTED:"
-    grep -iE 'BUG:|WARNING:|panic|KASAN|UBSAN|general protection fault' /tmp/dmesg.log
+    grep -iE 'BUG:|WARNING:|panic|KASAN|UBSAN|general protection fault' /tmp/dmesg.log | \
+      grep -v 'Speculative Return Stack Overflow' | \
+      grep -v 'RETBleed:'
     echo ">>> FAILED: kernel errors found"
     exit 1
 fi
