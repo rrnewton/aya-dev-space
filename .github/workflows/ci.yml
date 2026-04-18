@@ -1,3 +1,18 @@
+# CI for aya-rs pure-Rust BPF schedulers
+#
+# This workflow builds and VM-tests the Rust ports of sched_ext schedulers:
+#   - scx_cosmos_rs  (port of scx_cosmos)
+#   - scx_simple     (minimal FIFO scheduler)
+#   - scx_mitosis_rs (port of scx_mitosis)
+#
+# GitHub shows a 2×3 grid: {kernel} × {scheduler}.
+#
+# Why Nix?
+#   1. Pre-built sched_ext kernel images via Cachix — avoids 30+ min kernel
+#      builds in CI. The scx project maintains these Nix derivations.
+#   2. bpftool — not packaged in Ubuntu's APT repos. The Nix package
+#      (nixpkgs#bpftools) is the simplest way to get a current build.
+
 name: CI
 
 on:
@@ -10,19 +25,44 @@ jobs:
   build-and-test:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    name: "${{ matrix.scheduler }} / ${{ matrix.kernel }}"
 
     strategy:
       fail-fast: false
       matrix:
+        kernel: ["6.12", "6.18-for-next"]
+        scheduler: [scx_cosmos, scx_simple, scx_mitosis]
         include:
-          - kernel: stable/6_12
-            kernel_display: "6.12"
-            cosmos_features: ""
+          # --- Per-kernel config ---
+          - kernel: "6.12"
+            kernel_nix_id: stable/6_12
             allow_test_failure: true
-          - kernel: sched_ext/for-next
-            kernel_display: "6.18 (for-next)"
-            cosmos_features: "--features kernel_6_16"
+          - kernel: "6.18-for-next"
+            kernel_nix_id: sched_ext/for-next
             allow_test_failure: false
+          # --- Per-scheduler config ---
+          - scheduler: scx_cosmos
+            sched_path: scx/scheds/rust_only/scx_cosmos
+            sched_binary: scx_cosmos_rs
+            sched_display: "scx_cosmos_rs (Rust port)"
+            test_seconds: 30
+          - scheduler: scx_simple
+            sched_path: scx/scheds/rust_only/scx_simple
+            sched_binary: scx_simple
+            sched_display: "scx_simple (Rust FIFO)"
+            test_seconds: 15
+          - scheduler: scx_mitosis
+            sched_path: scx/scheds/rust_only/scx_mitosis
+            sched_binary: scx_mitosis_rs
+            sched_display: "scx_mitosis_rs (Rust port)"
+            test_seconds: 15
+          # --- Per-combo overrides ---
+          - kernel: "6.18-for-next"
+            scheduler: scx_cosmos
+            extra_cargo_flags: "--features kernel_6_16"
+
+    env:
+      EXTRA_CARGO_FLAGS: ${{ matrix.extra_cargo_flags || '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -30,13 +70,13 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      # --- Nix + Cachix (for pre-built kernels) ---
+      # --- Nix + Cachix (for pre-built kernels and bpftool) ---
       - name: Install Nix
         uses: cachix/install-nix-action@v25
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Configure Cachix
+      - name: Configure Cachix (sched-ext kernel cache)
         uses: cachix/cachix-action@v14
         with:
           name: sched-ext
@@ -98,12 +138,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: scx
-          prefix-key: "cosmos-${{ matrix.kernel_display }}"
+          prefix-key: "${{ matrix.scheduler }}-${{ matrix.kernel }}"
 
       # --- Load kernel from Cachix ---
-      - name: Load kernel (${{ matrix.kernel_display }})
+      - name: "Load kernel (${{ matrix.kernel }})"
         run: |
-          KERNEL_NAME="${{ matrix.kernel }}"
+          KERNEL_NAME="${{ matrix.kernel_nix_id }}"
           echo "Building/fetching kernel: $KERNEL_NAME"
           KERNEL_STORE_PATH=$(nix build --no-link --print-out-paths ./scx/.nix#kernel_${KERNEL_NAME})
           echo "KERNEL_STORE_PATH=$KERNEL_STORE_PATH" >> $GITHUB_ENV
@@ -112,12 +152,9 @@ jobs:
 
       - name: Extract vmlinux from bzImage
         run: |
-          # The Nix kernel build only outputs bzImage + System.map.
-          # Extract the raw vmlinux (with BTF) for bpftool.
           BZIMAGE="${KERNEL_STORE_PATH}/bzImage"
           VMLINUX="/tmp/vmlinux-target"
 
-          # Inline extract-vmlinux logic (from kernel scripts/extract-vmlinux)
           extract_try() {
             for pos in $(tr "$1\n$2" "\n$2=" < "$BZIMAGE" | grep -abo "^$2"); do
               pos=${pos%%:*}
@@ -148,41 +185,41 @@ jobs:
       - name: Install bpf-linker
         run: cargo +nightly install bpf-linker --no-default-features --features rust-llvm-22
 
-      # --- Build scx_cosmos ---
-      - name: Build scx_cosmos (${{ matrix.kernel_display }})
+      # --- Build scheduler ---
+      - name: "Build ${{ matrix.sched_display }}"
         run: |
-          cd scx/scheds/rust_only/scx_cosmos
-          if [ -n "$SCX_VMLINUX_BTF" ]; then
+          cd ${{ matrix.sched_path }}
+          if [ -n "${SCX_VMLINUX_BTF:-}" ]; then
             echo "Using target kernel BTF: $SCX_VMLINUX_BTF"
           else
             echo "Using runner kernel BTF: /sys/kernel/btf/vmlinux"
           fi
-          cargo build --release ${{ matrix.cosmos_features }}
-          echo "COSMOS_BIN=$(pwd)/target/release/scx_cosmos_rs" >> $GITHUB_ENV
+          cargo build --release $EXTRA_CARGO_FLAGS
+          echo "SCHED_BIN=$(pwd)/target/release/${{ matrix.sched_binary }}" >> $GITHUB_ENV
 
-      # --- Print debug info ---
+      # --- Debug info ---
       - name: Debug info
         run: |
-          echo "Kernel: ${{ env.KERNEL_STORE_PATH }}"
-          echo "Cosmos binary: ${{ env.COSMOS_BIN }}"
+          echo "Kernel: $KERNEL_STORE_PATH"
+          echo "Scheduler: $SCHED_BIN"
           grep 'model name' /proc/cpuinfo | head -1
-          file "${{ env.COSMOS_BIN }}"
+          file "$SCHED_BIN"
 
-      # --- Run VM test ---
-      - name: Test scx_cosmos (${{ matrix.kernel_display }})
+      # --- VM test ---
+      - name: "VM Test: ${{ matrix.sched_display }} on ${{ matrix.kernel }}"
         continue-on-error: ${{ matrix.allow_test_failure }}
         run: |
           chmod +x .github/scripts/test-scheduler.sh
           .github/scripts/test-scheduler.sh \
-            "${{ env.KERNEL_STORE_PATH }}/bzImage" \
-            "${{ env.COSMOS_BIN }}" \
-            30
+            "$KERNEL_STORE_PATH/bzImage" \
+            "$SCHED_BIN" \
+            ${{ matrix.test_seconds }}
 
       # --- Upload logs ---
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs-${{ matrix.kernel_display }}
+          name: "test-logs-${{ matrix.scheduler }}-${{ matrix.kernel }}"
           path: "*.ci.log"
           compression-level: 9
