@@ -158,10 +158,11 @@ jobs:
             | head -1 > /tmp/arena-test-bin-path
           TEST_BIN=$(cat /tmp/arena-test-bin-path)
           if [[ -z "$TEST_BIN" || ! -f "$TEST_BIN" ]]; then
-            echo "ERROR: Could not find integration-test binary"
-            # Fallback: search in target directory
-            TEST_BIN=$(find target -name 'integration_test-*' -type f -executable 2>/dev/null | head -1)
+            echo "JSON detection failed, using find fallback"
+            TEST_BIN=$(find "$(pwd)/target" -name 'integration_test-*' -type f -executable 2>/dev/null | head -1)
           fi
+          # Ensure absolute path
+          TEST_BIN=$(realpath "$TEST_BIN")
           echo "ARENA_TEST_BIN=$TEST_BIN" >> $GITHUB_ENV
           echo "Test binary: $TEST_BIN"
           file "$TEST_BIN"
