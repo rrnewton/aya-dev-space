@@ -5,7 +5,7 @@
 #   - scx_simple     (minimal FIFO scheduler)
 #   - scx_mitosis_rs (port of scx_mitosis)
 #
-# GitHub shows a 2×3 grid: {kernel} × {scheduler}.
+# GitHub shows a 3×3 grid: {kernel} × {scheduler}.
 #
 # Why Nix?
 #   1. Pre-built sched_ext kernel images via Cachix — avoids 30+ min kernel
@@ -17,7 +17,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
     branches: [main]
 
@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kernel: ["6.12", "6.18-for-next"]
+        kernel: ["6.12", "6.18-for-next", "7.0"]
         scheduler: [scx_cosmos, scx_simple, scx_mitosis]
         include:
           # --- Per-kernel config ---
@@ -40,6 +40,9 @@ jobs:
           - kernel: "6.18-for-next"
             kernel_nix_id: sched_ext/for-next
             allow_test_failure: false
+          - kernel: "7.0"
+            kernel_nix_id: stable/7_0
+            allow_test_failure: true
           # --- Per-scheduler config ---
           - scheduler: scx_cosmos
             sched_path: scx/scheds/rust_only/scx_cosmos
@@ -58,6 +61,9 @@ jobs:
             test_seconds: 15
           # --- Per-combo overrides ---
           - kernel: "6.18-for-next"
+            scheduler: scx_cosmos
+            extra_cargo_flags: "--features kernel_6_16"
+          - kernel: "7.0"
             scheduler: scx_cosmos
             extra_cargo_flags: "--features kernel_6_16"
 
