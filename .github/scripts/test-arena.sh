@@ -37,6 +37,18 @@ cat > "$VM_SCRIPT_FILE" <<INNEREOF
 set -e
 echo ">>> Running arena integration tests ..."
 
+# Debug: kernel version and arena support
+uname -r
+echo ">>> Checking kernel config for arena/kfunc support..."
+if [ -f /proc/config.gz ]; then
+    zcat /proc/config.gz | grep -E 'BPF_SYSCALL|BPF_JIT|DEBUG_INFO_BTF|ARENA' || echo "(no arena-specific config)"
+fi
+# Check if bpf_arena_alloc_pages is in vmlinux BTF
+if command -v bpftool &>/dev/null; then
+    echo ">>> bpf_arena_alloc_pages BTF entry:"
+    bpftool btf dump file /sys/kernel/btf/vmlinux format raw | grep -A2 "bpf_arena_alloc" 2>/dev/null || echo "(bpftool lookup failed)"
+fi
+
 # Run only arena tests (skip tests that need network namespaces etc.)
 $TEST_BIN --test-threads=1 arena 2>&1 || {
     echo ">>> FAILED: arena integration tests"
