@@ -45,7 +45,12 @@ if [ -f /proc/config.gz ]; then
 fi
 # Dump the bpf_arena_alloc_pages kfunc BTF type info
 echo ">>> bpf_arena_alloc_pages in vmlinux BTF:"
-bpftool btf dump file /sys/kernel/btf/vmlinux 2>/dev/null | grep -B1 -A3 "bpf_arena_alloc_pages" || echo "(bpftool not available or lookup failed)"
+BPFTOOL=$(command -v bpftool 2>/dev/null || find /nix -name bpftool -type f 2>/dev/null | head -1)
+if [ -n "$BPFTOOL" ]; then
+    $BPFTOOL btf dump file /sys/kernel/btf/vmlinux 2>/dev/null | grep -B1 -A3 "bpf_arena_alloc_pages" || echo "(grep found nothing)"
+else
+    echo "(bpftool not found)"
+fi
 
 # Run only arena tests (skip tests that need network namespaces etc.)
 $TEST_BIN --test-threads=1 arena 2>&1 || {
