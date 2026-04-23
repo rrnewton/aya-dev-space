@@ -1,11 +1,9 @@
-# CI for aya-rs pure-Rust BPF schedulers
+# CI for aya-rs pure-Rust BPF schedulers and arena data structures
 #
-# This workflow builds and VM-tests the Rust ports of sched_ext schedulers:
-#   - scx_cosmos_rs  (port of scx_cosmos)
-#   - scx_simple     (minimal FIFO scheduler)
-#   - scx_mitosis_rs (port of scx_mitosis)
-#
-# GitHub shows a 3×3 grid: {kernel} × {scheduler}.
+# Jobs:
+#   1. arena-checks:    Host-only arena unit tests, compile checks, benchmarks
+#   2. arena-vm-tests:  Arena BPF integration tests in a VM (kernel 6.18+)
+#   3. build-and-test:  Scheduler build + VM test matrix (3 kernels × 3 schedulers)
 #
 # Why Nix?
 #   1. Pre-built sched_ext kernel images via Cachix — avoids 30+ min kernel
@@ -22,6 +20,169 @@ on:
     branches: [main]
 
 jobs:
+  # ── Arena data structure checks (host-only, no VM) ─────────────────
+  arena-checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    name: "arena / host checks"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -f -y rustup pkg-config libelf-dev
+          echo /usr/lib/llvm-19/bin >> $GITHUB_PATH
+
+      - name: Install Rust toolchain
+        run: |
+          rustup default nightly
+          rustup component add rust-src
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: aya
+          prefix-key: "arena-checks"
+
+      - name: "Unit tests: aya-arena-common"
+        working-directory: aya
+        run: cargo test -p aya-arena-common
+
+      - name: "Compile check: arena-poc"
+        working-directory: aya
+        run: cargo build -p arena-poc
+
+      - name: "Compile check: arena-bench"
+        working-directory: aya
+        run: cargo build -p arena-bench
+
+      - name: "Run benchmarks: arena-bench"
+        working-directory: aya
+        run: cargo run -p arena-bench
+
+  # ── Arena BPF integration tests (VM with arena-capable kernel) ─────
+  arena-vm-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    name: "arena / BPF integration (${{ matrix.kernel }})"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        kernel: ["6.18-for-next"]
+        include:
+          - kernel: "6.18-for-next"
+            kernel_nix_id: sched_ext/for-next
+            allow_test_failure: false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Configure Cachix (sched-ext kernel cache)
+        uses: cachix/cachix-action@v14
+        with:
+          name: sched-ext
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipAddingSubstituter: false
+          useDaemon: false
+
+      - name: Configure fast APT mirror
+        uses: vegardit/fast-apt-mirror.sh@1.4.1
+        with:
+          exclude-current: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -f -y \
+            bison cmake cpio elfutils file flex gcc gcc-multilib git \
+            iproute2 jq kbd kmod libcap-dev libelf-dev libunwind-dev \
+            libzstd-dev linux-tools-common make ninja-build pahole \
+            pkg-config python3-dev python3-pip python3-requests \
+            qemu-kvm rsync udev zstd libseccomp-dev \
+            libcap-ng-dev llvm-19 clang-19 python3-full dwarves \
+            rustup autopoint
+          echo /usr/lib/llvm-19/bin >> $GITHUB_PATH
+
+      - name: Install bpftool via Nix
+        run: |
+          BPFTOOL_PATH=$(nix build --no-link --print-out-paths nixpkgs#bpftools)
+          echo "$BPFTOOL_PATH/bin" >> $GITHUB_PATH
+
+      - name: Install Rust toolchains
+        run: |
+          rustup default nightly
+          rustup component add rust-src
+
+      - name: Setup KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install virtme-ng
+        run: sudo pip3 install virtme-ng --break-system-packages
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: aya
+          prefix-key: "arena-vm-${{ matrix.kernel }}"
+
+      - name: "Load kernel (${{ matrix.kernel }})"
+        run: |
+          KERNEL_NAME="${{ matrix.kernel_nix_id }}"
+          KERNEL_STORE_PATH=$(nix build --no-link --print-out-paths ./scx/.nix#kernel_${KERNEL_NAME})
+          echo "KERNEL_STORE_PATH=$KERNEL_STORE_PATH" >> $GITHUB_ENV
+
+      - name: Install bpf-linker
+        run: cargo +nightly install bpf-linker --no-default-features --features rust-llvm-22
+
+      - name: "Build arena integration tests"
+        working-directory: aya
+        run: |
+          AYA_BUILD_INTEGRATION_BPF=true cargo test -p integration-test --no-run --message-format=json 2>/dev/null \
+            | jq -r 'select(.executable != null and .target.name == "integration-test") | .executable' \
+            | head -1 > /tmp/arena-test-bin-path
+          TEST_BIN=$(cat /tmp/arena-test-bin-path)
+          if [[ -z "$TEST_BIN" || ! -f "$TEST_BIN" ]]; then
+            echo "ERROR: Could not find integration-test binary"
+            # Fallback: search in target directory
+            TEST_BIN=$(find target -name 'integration_test-*' -type f -executable 2>/dev/null | head -1)
+          fi
+          echo "ARENA_TEST_BIN=$TEST_BIN" >> $GITHUB_ENV
+          echo "Test binary: $TEST_BIN"
+          file "$TEST_BIN"
+
+      - name: "VM Test: arena integration on ${{ matrix.kernel }}"
+        continue-on-error: ${{ matrix.allow_test_failure }}
+        run: |
+          chmod +x .github/scripts/test-arena.sh
+          .github/scripts/test-arena.sh \
+            "$KERNEL_STORE_PATH/bzImage" \
+            "$ARENA_TEST_BIN"
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "arena-test-logs-${{ matrix.kernel }}"
+          path: "*.ci.log"
+          compression-level: 9
+
+  # ── Scheduler build + VM test ──────────────────────────────────────
   build-and-test:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
