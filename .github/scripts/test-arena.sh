@@ -41,15 +41,7 @@ echo ">>> Running arena integration tests ..."
 uname -r
 echo ">>> Checking kernel config for arena/kfunc support..."
 if [ -f /proc/config.gz ]; then
-    zcat /proc/config.gz | grep -E 'BPF_SYSCALL|BPF_JIT|DEBUG_INFO_BTF|ARENA' || echo "(no arena-specific config)"
-fi
-# Dump the bpf_arena_alloc_pages kfunc BTF type info
-echo ">>> bpf_arena_alloc_pages in vmlinux BTF:"
-BPFTOOL=$(command -v bpftool 2>/dev/null || find /nix -name bpftool -type f 2>/dev/null | head -1 || true)
-if [ -n "${BPFTOOL:-}" ]; then
-    "$BPFTOOL" btf dump file /sys/kernel/btf/vmlinux 2>/dev/null | grep -B1 -A3 "bpf_arena_alloc_pages" || echo "(grep found nothing)"
-else
-    echo "(bpftool not found)"
+    zcat /proc/config.gz | grep -E 'BPF_SYSCALL|BPF_JIT|DEBUG_INFO_BTF|ARENA' || true
 fi
 
 # Run only arena tests (skip tests that need network namespaces etc.)
