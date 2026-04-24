@@ -157,11 +157,15 @@ jobs:
       - name: "Build arena integration tests"
         working-directory: aya
         run: |
-          AYA_BUILD_INTEGRATION_BPF=true cargo test -p integration-test --no-run --message-format=json 2>/dev/null \
+          # Build with BPF; capture stderr separately for diagnostics
+          AYA_BUILD_INTEGRATION_BPF=true cargo test -p integration-test --no-run --message-format=json 2>/tmp/arena-build-stderr \
             | jq -r 'select(.executable != null and .target.name == "integration-test") | .executable' \
             | head -1 > /tmp/arena-test-bin-path
           TEST_BIN=$(cat /tmp/arena-test-bin-path)
           if [[ -z "$TEST_BIN" || ! -f "$TEST_BIN" ]]; then
+            echo "=== BPF build stderr ==="
+            cat /tmp/arena-build-stderr | tail -50
+            echo "=== end stderr ==="
             echo "JSON detection failed, using find fallback"
             TEST_BIN=$(find "$(pwd)/target" -name 'integration_test-*' -type f -executable 2>/dev/null | head -1)
           fi
