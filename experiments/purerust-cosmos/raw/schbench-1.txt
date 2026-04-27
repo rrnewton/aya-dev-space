@@ -1,0 +1,44 @@
+schbench: option requires an argument -- 'R'
+schbench usage:
+	-C (--calibrate): run our work loop and report on timing
+	-L (--no-locking): don't spinlock during CPU work (def: locking on)
+	-m (--message-threads): number of message threads (def: 1)
+	-M (--message-cpus): pin message threads to these CPUs 'a-m,n-z' or 'auto' (def: no pinning)
+	-W (--worker-cpus): pin worker threads to these CPUs 'a-m,n-z' or 'auto' (def: no pinning)
+	-t (--threads): worker threads per message thread (def: num_cpus)
+	-r (--runtime): How long to run before exiting (seconds, def: 30)
+	-F (--cache_footprint): cache footprint (kb, def: 256)
+	-n (--operations): think time operations to perform (def: 5)
+	-s (--sleep_usec): think time sleep (usecs) per request
+	-A (--auto-rps): grow RPS until cpu utilization hits target (def: none)
+	-p (--pipe): transfer size bytes to simulate a pipe test (def: 0)
+	-R (--rps): requests per second mode (count, def: 0)
+	-w (--warmuptime): how long to warmup before resetting stats (seconds, def: 0)
+	-i (--intervaltime): interval for printing latencies (seconds, def: 10)
+	-z (--zerotime): interval for zeroing latencies (seconds, def: never)
+	-j (--json) <file>: output in json format (def: false)
+	-J (--jobname) <name>: an optional jobname to add to the json output (def: none)
+Command exited with non-zero status 1
+	Command being timed: "schbench -m 88 -t 1 -r 30 -R"
+	User time (seconds): 0.00
+	System time (seconds): 0.00
+	Percent of CPU this job got: 0%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.00
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 2916
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 177
+	Voluntary context switches: 0
+	Involuntary context switches: 1
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 8
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 1

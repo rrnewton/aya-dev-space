@@ -1,0 +1,10 @@
+stress-ng: info:  [900225] setting to a 10 secs run per stressor
+stress-ng: info:  [900225] dispatching hogs: 4 context
+stress-ng: metrc: [900225] stressor       bogo ops real time  usr time  sys time   bogo ops/s     bogo ops/s
+stress-ng: metrc: [900225]                           (secs)    (secs)    (secs)   (real time) (usr+sys time)
+stress-ng: metrc: [900225] context          191775     10.00     20.54     19.41     19177.42        4800.08
+stress-ng: info:  [900225] skipped: 0
+stress-ng: info:  [900225] passed: 4: context (4)
+stress-ng: info:  [900225] failed: 0
+stress-ng: info:  [900225] metrics untrustworthy: 0
+stress-ng: info:  [900225] successful run completed in 10.00 secs

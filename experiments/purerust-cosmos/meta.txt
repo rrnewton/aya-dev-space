@@ -1,0 +1,13 @@
+scheduler: scx_cosmos
+scheduler_binary: /home/newton/working_copies/aya-rs.dev/scx/scheds/rust_only/scx_cosmos/target/release/scx_cosmos
+scheduler_args: 
+kernel: 6.13.2-0_fbk9_0_gb487e362c3df
+hostname: devbig176.vll5.facebook.com
+date: 2026-03-18T14:29:54-07:00
+cpus: 176
+cpu_model: AMD EPYC 9D64 88-Core Processor
+memory_total_kb: 263440080
+numa_nodes: 1
+iterations: 3
+warmup_seconds: 5
+settle_seconds: 3

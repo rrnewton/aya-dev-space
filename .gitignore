@@ -1,1 +1,23 @@
+# Built scheduler binaries (in submodules)
 scx_cosmos_rs
+
+# Profiling artifacts
+*.profraw
+
+# Experiment logs and binary artifacts
+experiments/**/logs/
+experiments/**/*.log
+experiments/**/*.bin
+experiments/**/*.o
+
+# Worktrees (submodule working copies for parallel agents)
+aya2/
+aya3/
+aya4/
+aya-test/
+
+# Claude Code local settings
+.claude/
+
+# Build artifacts
+target/
