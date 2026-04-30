@@ -20,6 +20,17 @@ Make sure that the next person/agent that picks up the repository will
 be able to understand the status just from the beads issues, without
 reference to tg graphs that only exist on THIS machine.
 
+## BPF Development Rule — MANDATORY
+
+**Any work involving BPF compilation MUST include:**
+
+1. **Verifier acceptance** — the BPF program must be loaded into a real kernel and pass the BPF verifier. Compilation alone is NEVER sufficient.
+2. **Runtime testing** — the BPF program must execute and produce correct results, typically tested in a VM with a real kernel.
+
+**Never claim BPF code "works" based only on compilation.** "Compiles to BPF" ≠ "works in BPF". The verifier catches issues the compiler cannot: unbounded loops, invalid pointer arithmetic, instruction limits, call depth limits.
+
+**This applies to:** arena data structures, vanilla Rust data structures (Vec, BTreeMap, etc.), scheduler BPF programs, kfuncs, and any other BPF code.
+
 ## Orchestrator workflow
 
 When the user gives a task, act as an **autonomous orchestrator**:
